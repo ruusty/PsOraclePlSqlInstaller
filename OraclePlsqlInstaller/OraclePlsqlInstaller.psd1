@@ -13,7 +13,7 @@ GUID = '0266FC6C-A26E-4A6A-1E1B-9E2DBDC3F2AA'
 Author = 'Russell'
 
 # Company or vendor of this module
-CompanyName = 'Ched Services'
+CompanyName = ''
 
 # Copyright statement for this module
 Copyright = 'Ched Services (c) 2016. All rights reserved.'

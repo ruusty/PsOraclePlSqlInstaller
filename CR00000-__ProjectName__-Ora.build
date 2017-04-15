@@ -1,11 +1,9 @@
 <?xml version="1.0" encoding="utf-8" ?>
 <project name="CR00000-__ProjectName__-Ora" default="build">
     <description>Build file for the CR00000-__ProjectName__ using Git</description>
-
     <!--=============================================================================
-      Copyright : Ched Services P/L
 
-        Project : GIS OMS
+        Project :
 
     Applic Name : CR00000-__ProjectName__
 
@@ -89,7 +87,7 @@
     <property name="package.zipFname"        value="${path::combine (proj.dist.path,proj.build.name+'.zip')}" />
     <property name="package.ListFname"       value="${path::combine (proj.topdir,proj.build.name+'.lis')}" />
 
-    <property name="proj.history"            value="${proj.build.name}.history.log" />
+    <property name="proj.history"            value="${proj.build.name}.git_history.log" />
     <property name="proj.version.file"       value="${proj.build.name}.Build.Number" />
 
     <!-- Project config settings }-->
@@ -98,11 +96,12 @@
         <echo message="Building ${proj.build.name}" />
     </target>
 
-    <target name="build" depends="git-status,clean,git-history,set-version,tag,compile,distribute,show-deliverable" description="Does the full build and copies the deliverable to \\COVMWNECODP1\Delivery\CR33194-PlannedOutageNotifConnCustomer">
+    <target name="build-local" depends="clean,git-history,set-version,compile,tag-version" />
+    <target name="build" depends="git-status,clean,git-history,set-version,compile,tag-version,distribute,show-deliverable" description="Does the full build and copies the deliverable to \\COVMWNECODP1\Delivery\CR33194-PlannedOutageNotifConnCustomer">
         <echo message="Building ${proj.build.name}" />
     </target>
 
-     <target name="compile" description="Build Deliverable" depends="set-version">
+     <target name="compile" description="Build Deliverable" >
          <loadfile file="${proj.version.file}"     property="AppBuildNumber.version" />
          <property name="local.PackageVersion"     value="${AppBuildNumber.version}"/>
 
@@ -112,12 +111,13 @@
                  <exclude name="990_Version-pon.oms.sql" />
                  <exclude name="**/*.log" />
                  <exclude name="**/*.zip" />
+                 <exclude name="**/*.rar" />
                  <exclude name="**/*.credential" />
                  <exclude name="**/.*" />
-                 <exclude name="Dist/**/*" />
-                 <exclude name="Build/**/*" />
-                 <exclude name="Dist" />
-                 <exclude name="Build" />
+                 <exclude name="Dist/**" />
+                 <exclude name="Build/**" />
+                 <exclude name="OraclePlsqlInstaller/**" />
+                 <exclude name="PlSql-sample-installers/**" />
             </fileset>
         </copy>
 
@@ -126,13 +126,13 @@
              <include name="${proj.history}" />
            </fileset>
        </copy>
-
+<!--
        <property name="local.plsql.Path" value="${path::combine (proj.Build.path,'OMS\sql_packages\OMS.PLANNED_OUTAGE.pkb') }"/>
        <echo message="${version::plsql( local.plsql.Path, AppBuildNumber.version )}" />
 
        <property name="local.plsql.Path" value="${path::combine (proj.Build.path,'OMS\sql_packages\OMS.CHED_UTILS.pkb') }"/>
        <echo message="${version::plsql( local.plsql.Path, AppBuildNumber.version )}" />
-
+-->
        <copy todir="${proj.Build.Dir}" verbose="true">
             <fileset basedir="${proj.topdir}">
                 <include name="..\Readme.md" />
@@ -145,6 +145,7 @@
                 </replacetokens>
             </filterchain>
         </copy>
+
         <!-- documentation -->
         <exec program="powershell.exe" verbose="true" workingdir="${proj.Build.Dir}" >
               <arg value='-noProfile' />
@@ -182,18 +183,22 @@
 
 
     <target name="set-version" description="Set the version">
-        <echo message="${GisOms.release.MajorMinor}" file="${proj.version.file}" append="false" />
-        <version buildtype="MonthDay" path="${proj.build.name}.Build.Number" prefix="AppBuildNumber" revisiontype="Automatic" startdate="${GisOms.release.StartDate}" verbose="true"/>
+        <echo message="${GisOms.release.MajorMinor}" file="${proj.version.file}" append="false"/>
+        <version buildtype="MonthDay" path="${proj.version.file}" prefix="AppBuildNumber" revisiontype="Automatic" startdate="${GisOms.release.StartDate}" verbose="true"/>
     </target>
 
-
-    <target name="tag" description="git tag version">
-    <loadfile file="${proj.version.file}"     property="AppBuildNumber.version" />
+    <target name="tag-version" description="Set the version tag in Git repo" depends="set-version">
+      <loadfile file="${proj.version.file}"     property="AppBuildNumber.version" />
       <!-- Create a tag -->
-      <exec program="git.exe" verbose="true"  workingdir="${proj.topdir}"  >
+      <exec program="${git.exe}" verbose="true"  workingdir="${proj.topdir}"  >
         <arg line= "tag"/>
         <arg line= "V${AppBuildNumber.version}"/>
       </exec>
+    </target>
+
+    <target name="get-version" description="Get the version">
+      <loadfile file="${proj.version.file}"     property="AppBuildNumber.version" />
+      <echo message="Build Number ${AppBuildNumber.version}"/>
     </target>
 
 
@@ -268,9 +273,8 @@ ${proj.build.name}
             <fail message="Modified source files exist. Please commit changes. ${environment::newline()} ${local.status.result} " />
         </if>
     </target>
-
-<!--
-    <target name="git_revision" description="git described based revision number of the code" >
+<!-- Not using
+    <target name="git-revision" description="git described based revision number of the code" depends="get-version" >
         <property name="local.git_revision.log"     value="${proj.build.name}.git_revision.log" />
         <property name="local.git_revision.sql"     value="${proj.build.name}.git_revision.sql" />
         <delete file="${local.git_revision.sql}" if="${file::exists(local.git_revision.sql)}" />
@@ -285,7 +289,6 @@ ${proj.build.name}
         <echo message="define RELEASE_ID=${proj.build.name}.${AppBuildNumber.version}" file="${local.git_revision.sql}" append="true" verbose="true"/>
     </target>
 -->
-
     <target name="show-props" description="print out props" >
         <script language="C#"  prefix="rgh" >
             <code>
@@ -316,21 +319,13 @@ ${proj.build.name}
     </target>
 
 
-    <target name="build-list" description="Generate the list of files to put in the zip deliverable">
-        <exec   program="powershell.exe" verbose="true" workingdir="${proj.topdir}" failonerror="true">
-            <arg line="-NoProfile" />
-            <arg line="-File" />
-            <arg line=".\get-build_list.ps1" />
-        </exec>
-    </target>
-
-    <target name="build-list2" description="Generate the list of files to put in the zip deliverable second method">
+    <target name="build-list" description="Generate the list of files to put into the zip file">
         <exec   program="powershell.exe" verbose="true" workingdir="${proj.topdir}" failonerror="true">
             <arg line="-NoProfile" />
             <arg line="-ExecutionPolicy" />
             <arg line="unrestricted" />
             <arg line="-Command" />
-            <arg line="&amp; { .\get-build_list.ps1 -verbose}" />
+            <arg line="&amp; { import-module  .\OraclePlsqlInstaller\OraclePlsqlInstaller.psm1 -verbose; OraclePlsqlInstaller\Get-BuildList -verbose}" />
         </exec>
     </target>
 

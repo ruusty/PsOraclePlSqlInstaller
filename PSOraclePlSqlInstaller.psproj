@@ -1,0 +1,38 @@
+﻿<Project>
+  <Version>2.0</Version>
+  <FileID>48fbe8ff-f0ad-49c7-baec-84798257600f</FileID>
+  <ProjectType>2</ProjectType>
+  <Folders>
+    <Folder>OraclePlsqlInstaller</Folder>
+    <Folder>OraclePlsqlInstaller\Public</Folder>
+  </Folders>
+  <Files>
+    <File Build="1">.gitignore</File>
+    <File Build="2" Shared="False">sql.default.ps1</File>
+    <File Build="2">OraclePlsqlInstaller\OraclePlsqlInstaller.psd1</File>
+    <File Build="2">OraclePlsqlInstaller\OraclePlsqlInstaller.psm1</File>
+    <File Build="2" Shared="False">OraclePlsqlInstaller\Public\ConvertTo-SqlPlusCommands.ps1</File>
+    <File Build="2" Shared="False">OraclePlsqlInstaller\Public\ConvertTo-SqlPlusCommands.Tests.ps1</File>
+    <File Build="2" Shared="False">OraclePlsqlInstaller\Public\Get-BuildList.ps1</File>
+    <File Build="2" Shared="False">OraclePlsqlInstaller\Public\Get-BuildList.Tests.ps1</File>
+    <File Build="2" Shared="False">OraclePlsqlInstaller\Public\Get-SqlPlusCommands.ps1</File>
+    <File Build="2" Shared="False">OraclePlsqlInstaller\Public\Get-SqlPlusCommands.Tests.ps1</File>
+    <File Build="2" Shared="False">OraclePlsqlInstaller\Public\New-OracleRunFixture.ps1</File>
+    <File Build="2" Shared="False">OraclePlsqlInstaller\Public\New-OracleRunFixture.Tests.ps1</File>
+    <File Build="2" Shared="False">OraclePlsqlInstaller\Public\Set-CommandLine.ps1</File>
+    <File Build="2" Shared="False">OraclePlsqlInstaller\Public\Set-CommandLine.Tests.ps1</File>
+    <File Build="2" Shared="False">OraclePlsqlInstaller\Public\Set-OracleUserPassword.ps1</File>
+    <File Build="2" Shared="False">OraclePlsqlInstaller\Public\Set-OracleUserPassword.Tests.ps1</File>
+    <File Build="2" Shared="False">OraclePlsqlInstaller\Public\Set-SdlcConnections.ps1</File>
+    <File Build="2" Shared="False">OraclePlsqlInstaller\Public\Set-SdlcConnections.Tests.ps1</File>
+    <File Build="2" Shared="False">OraclePlsqlInstaller\Public\Show-OraSecret.Tests.ps1</File>
+    <File Build="2" Shared="False">OraclePlsqlInstaller\Public\Start-Executable.ps1</File>
+    <File Build="2" Shared="False">OraclePlsqlInstaller\Public\Start-Executable.Tests.ps1</File>
+    <File Build="2" Shared="False">OraclePlsqlInstaller\Public\Test-OracleConnections.ps1</File>
+    <File Build="2" Shared="False">OraclePlsqlInstaller\Public\Test-OracleConnections.Tests.ps1</File>
+    <File Build="2" Shared="False">OraclePlsqlInstaller\Public\Show-OracleSecret.ps1</File>
+  </Files>
+  <DeployMode>Project</DeployMode>
+  <PrimaryFile>
+  </PrimaryFile>
+</Project>

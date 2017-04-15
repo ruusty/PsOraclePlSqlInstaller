@@ -1,51 +1,51 @@
-﻿<#
+﻿function Set-SdlcConnections
+<#
   .SYNOPSIS
     Set the SDLC
   
   .DESCRIPTION
-    set and verify the SDLC
+    set and verify the SDLC Oracle Connection strings
   
   .PARAMETER sdlc_environment
     A description of the sdlc_environment parameter.
   
-  .PARAMETER local_service
-    A description of the local_service parameter.
   
   .EXAMPLE
-    		PS C:\> Set-SDLC_Connection -sdlc_environment DEV 
+    		PS C:\> Set-SDLC_Connection -sdlc DEV 
   
   .NOTES
     Additional information about the function.
 #>
-function Set-SdlcConnections
 {
   [CmdletBinding()]
   param
   (
     [Parameter(Mandatory = $true,
                Position = 1)]
-    [ValidateSet('DEV', 'TEST', 'UAT', 'PROD')]
-    [string]$sdlc
+    [ValidateSet('DEV', 'TEST', 'UAT', 'PROD','UNKNOWN')]
+    [string]$sdlc ='UNKNOWN'
   )
-  
   switch -case ($sdlc)
   {
     DEV  {
-      $local_services = @{ pon = "POND.world"; onc = "ONCD.world" }; break
+      $netServiceNames = @{ pon = "POND.world"; onc = "ONCD.world" }; break
     }
     TEST {
-      $local_services = @{ pon = "PONT.world"; onc = "ONCT.world" }; break
+      $netServiceNames = @{ pon = "PONT.world"; onc = "ONCT.world" }; break
     }
     UAT  {
-      $local_services = @{ pon = "PONU.world"; onc = "ONCU.world"; sweg = "SWEG43U.world" }; break
+      $netServiceNames = @{ pon = "PONU.world"; onc = "ONCU.world"; sweg = "SWEG43U.world" }; break
     }
     PROD {
-      $local_services = @{ pon = "PONP.world"; onc = "ONCP.world"; sweg = "SWEG43P.world" }; break
+      $netServiceNames = @{ pon = "PONP.world"; onc = "ONCP.world"; sweg = "SWEG43P.world" }; break
+    }
+    UNKNOWN {
+      $netServiceNames = @{ pon = "PONX.world"; onc = "ONCX.world"; sweg = "SWEG43X.world" }; break
     }
     default { throw "Unknown environment"; break }
   }
-  $local_services.GetEnumerator() | Sort-Object Name | % {
-    write-verbose("$local_services {0} : {1} " -f $_.name, $_.value)
+  $netServiceNames.GetEnumerator() | Sort-Object Name | % {
+    write-verbose("$netServiceNames {0} : {1} " -f $_.name, $_.value)
   }
-  $local_services
+  $netServiceNames
 }

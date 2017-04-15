@@ -1,50 +1,59 @@
 @echo off
 @rem ============================================================================
 @rem
-@rem     Project : GIS/OMS
+@rem     Project :
 @rem
-@rem        Date : 2016-02-11
-@rem Copyright (c) Ched Services
+@rem        Date : 2016-04-15
 @rem
-@rem    Function : Execute and log SQL files applied to a database
+@rem    Function : Pl/Sql installer
 @rem
 @rem  Example:
 @rem   Install SDLC
 @rem
 @rem ===========================================================================
-setlocal
+setlocal ENABLEDELAYEDEXPANSION
 @cls
 @echo off
+@set buildfile=sql.default.ps1
 @echo.MSG00^>Running:%~nx0
-for %%i in (".") do set JobName=%%~ni
-if /I "%1" == ""      goto batch_help "%1"
-if /I "%1" == "-help" goto batch_help "%1"
-if /I "%1" == "-h"    goto batch_help "%1"
-if /I "%1" == "/h"    goto batch_help "%1"
-if /I "%1" == "-?"    goto batch_help "%1"
-if /I "%1" == "help"  goto batch_help "%1"
+for %%i in (
+""
+"-help"
+"-h"
+"/h"
+"-?"
+"help"
+) do (
+if /I "%%~i" == "%~1"   goto batch_help "%1"
+)
 
+for %%i in ("PROD" "UAT" "TEST" "DEV") do (
+if /i "%%~i"  == "%~1"  set SDLC=%%~i
+)
+shift /1
+@echo.SDLC=%SDLC%
 
-if /i "%1" EQU "PROD" set sdlc_ENVIRONMENT=PROD
-if /i "%1" EQU "UAT"  set sdlc_ENVIRONMENT=UAT
-if /i "%1" EQU "TEST" set sdlc_ENVIRONMENT=TEST
-if /i "%1" EQU "DEV"  set sdlc_ENVIRONMENT=DEV
-
-if  not defined sdlc_ENVIRONMENT goto batch_help
-if "%sdlc_ENVIRONMENT%" == "" goto batch_help
+if  not defined sdlc goto batch_help
+if "%sdlc%" == "" goto batch_help
 
 cd /d %~dp0
 
 @cd
+hostname
 whoami
 @ver>nul
-@rem parameters overide those in .config\config.ps1
-@rem properties must exist only override with parameters
-@rem to turn Verbose off @{VerbosePreference=[System.Management.Automation.ActionPreference]::SilentlyContinue}
-@rem parameter overide properties
+@rem You can override a property in your build script using the "properties" parameter of the Invoke-psake function.
+@rem To summarize the differences between passing parameters and properties to the Invoke-psake function:
+@rem
+@rem     Parameters and "properties" can both be passed to the Invoke-psake function simultaneously
+@rem     Parameters are set before any "properties" blocks are run
+@rem     Properties are set after all "properties" blocks have run
+@rem
 @echo on
-@rem call psake sql.default.ps1 -properties "@{VerbosePreference='Continue';cfg_sqlSpec=@('[0-9_][0-9_][0-9_]_*-*.sql','[0-9_][0-9_][a-z]_*-*.sql')}" -parameters "@{JobName='%JobName%';sdlc_environment='%sdlc_ENVIRONMENT%';}" %~2
-call psake sql.default.ps1 -properties "@{VerbosePreference='SilentlyContinue';cfg_sqlSpec=@('[0-9_][0-9_][0-9_]_*-*.sql')}" -parameters "@{JobName='%JobName%';sdlc_environment='%sdlc_ENVIRONMENT%';}" %~2
+@rem call psake "%buildfile%" -properties "@{cfg_sqlSpec=@('[0-9_][0-9_][0-9_]_*-*.sql','[0-9_][0-9_][a-z]_*-*.sql');verbose=$false;whatif=$true;sdlc='%sdlc%'}" " %~1
+@rem call psake sql.default.ps1 -properties "@{cfg_sqlSpec=@('[0-9_][0-9_][0-9_]_*-*.sql');verbose=$false;sdlc='%sdlc%';whatif=$true;}" %1 %2 %3
+call psake sql.default.ps1 -properties "@{cfg_sqlSpec=@('[0-9_][0-9_][0-9_]_*-*.sql');verbose=$false;sdlc='%sdlc%';whatif=$false;}" %1 %2 %3
+
 @echo.MSG99^>%~nx0:ERRORLEVEL=%ERRORLEVEL%
 @echo on
 exit /b %ERRORLEVEL%
@@ -52,11 +61,11 @@ exit /b %ERRORLEVEL%
 :batch_help
 @echo.%~n0 ^<SDLC^>
 @echo.Example
-@echo.%~n0 [PROD^|UAT^|TEST^|DEV] tasks1,task2
+@echo.%~n0 [PROD^|UAT^|TEST^|DEV] "tasks1,task2"
 @echo.
 @echo.Tasks
-@psake -docs
+@psake -buildfile "%buildfile%" -docs
+@exit /b 1
 @goto :EOF
-
 
 
