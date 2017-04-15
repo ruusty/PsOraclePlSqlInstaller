@@ -15,3 +15,4 @@ test-args2.ps1
 test-credential.ps1
 test-validate.ps1
 *.psprojs
+/_msg.txt
