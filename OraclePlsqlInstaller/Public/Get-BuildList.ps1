@@ -1,11 +1,10 @@
 function Get-BuildList
 <#
   .SYNOPSIS
-    Gets the paths of pl/sql executed by the top pl/sql *.sql files
+    Return the relative paths of pl/sql executed by the top pl/sql *.sql files
   
   .DESCRIPTION
     Extracts the file names of SQL*Plus script files from the top pl/sql *.sql files.
-    Creates a *.lis file containing file names used to create a zip.
     
     SQL*Plus script files are identified by the @ or @@ symbol at the start of the line.
     
@@ -38,19 +37,16 @@ function Get-BuildList
   param
   (
     [Parameter(Position = 1)]
-    [String[]]$Path = $("[0-9_][0-9_][0-9_]_*-*.sql", "[0-9_][0-9_][a-z]_*-*.sql"),
-    [string]$BuildPath = $(Resolve-Path -Path $(Join-Path $PWD "*.build") -Relative | sort | Select-Object -First 1),
-    [string[]]$prolog = @('README.md','README.html', 'install.bat', 'sql.default.ps1' ),
+    [String[]]$sqlSpec = $("[0-9_][0-9_][0-9_]_*-*.sql", "[0-9_][0-9_][a-z]_*-*.sql"),
+    [string]$ProjectName = $([System.IO.Path]::GetFileName($PWD)),
+    [string[]]$prolog = @('README.md','README.html', 'install.bat', 'sqlplus.psake.ps1' ),
     [string[]]$logsuffix = @(".Build.Number", ".git_history.log")
   )
   #region Initialization code
   "PSBoundParameters",$PSBoundParameters.GetEnumerator() | ForEach {
     $_
   } | Out-String | write-verbose
-  #The list file has the same name as the build file
-  $ProjectLisPath = [System.IO.Path]::ChangeExtension($BuildPath, ".lis")
-  $BuildPathNoExt = [System.IO.Path]::GetFileNameWithoutExtension($BuildPath)
-#write the parameters
+  #write the parameters
   foreach ($Parameter in (Get-Command -Name $PSCmdlet.MyInvocation.InvocationName).Parameters)
   {
     $("Attempting " + $PSCmdlet.MyInvocation.InvocationName), $(Get-Variable -Name $Parameter.Values.Name -ErrorAction SilentlyContinue) | Out-String | write-verbose
@@ -79,7 +75,8 @@ function Get-BuildList
       }
       else
       {
-        throw [System.IO.FileNotFoundException] "File not found : $_"
+        #throw [System.IO.FileNotFoundException] "File not found : $_"
+        Write-Warning -Message "File not found : $_"
       }
     }
   }
@@ -89,13 +86,13 @@ function Get-BuildList
   # yeah! the cmdlet supports wildcards
   switch ($PsCmdlet.ParameterSetName)
   {
-    "Path"         { $ResolveArgs = @{ Path = $Path }; break }
+    "Path"         { $ResolveArgs = @{ Path = $sqlSpec }; break }
   }
   
   $resultoutputfiles = @();
   $resultoutputfiles = foreach ($i in $logsuffix)
   {
-    ("{0}{1}" -f $BuildPathNoExt , $i)
+    ("{0}{1}" -f $ProjectName , $i)
   }
   $resultoutputfiles += $prolog
   
@@ -105,5 +102,5 @@ function Get-BuildList
     write-verbose("Name:{0}" -f $_.Name)
     $resultoutputfiles += @(recurseSqlFiles -ErrorAction "Stop" $_.Name)
   }
-  $resultoutputfiles | set-Content -Path $ProjectLisPath
+  $resultoutputfiles
 }

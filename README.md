@@ -1,12 +1,12 @@
 
-# CR00000-__ProjectName__
+# __ProjectName__
 
 <pre style="font-size: .75em;">
 Project:        
-Product:        CR00000-__ProjectName__-Ora.build
-Version:
-Date:           YYYY-MM-DD
-Description:    CR00000-__ProjectName__ Oracle into SDLC OMS database.
+Product:        __ProjectName__-Ora.build
+Version:        4.3.0.0
+Date:           2017-05-15
+Description:    __ProjectName__ Oracle into SDLC OMS database.
 
 CHED Services
 
@@ -25,6 +25,8 @@ CHED Services
 ## Description [&uarr;](#TOC) ##
 
 Delivers xyz functionality 
+
+Installs *Pl/Sql* code into Oracle SDLC databases in a repeatable and configurable manner. .
 
 
 <a name="installation"></a>
@@ -53,7 +55,7 @@ This enables the following :-
 - Oracle schema passwords are saved in encrypted `*.credential` files
 - Date version log files
 - Installation as simple as `install SDLC`
-- Build filed to create a zip file containing artifacts to be deployed to database
+- Build file `build.psake.ps1` to create a zip file containing artifacts to be deployed to database
 - Error handling
 - Sample implementations
 
@@ -119,12 +121,12 @@ Targeting Production.
 
 Pl/sql Filename                           | Database | schema         | credential file                  | Command line
 :----------------                         |:---      |:---            |:---                              |:---
-130_pkg.CHED_ORDER_UTILS-pon.oms.sql      | pon      | oms            | oms@ponp.world.credential        |sqlplus.exe -L "oms/oms_pwd@ponp.world"             @"run.sql" "130_pkg.CHED_ORDER_UTILS-pon.oms.sql"         "130_pkg.CHED_ORDER_UTILSs-pon.oms.sql.YYYY-MM-ddTHH-mm-ss.log"
 002_clean_up-pon.oms_local.sql            | pon      | oms_local      | oms_local@ponp.world.credential  |sqlplus.exe -L "oms_local/oms_local_pwd@ponp.world" @"run.sql" "002_clean_up-pon.oms_local.sql"               "002_clean_up-pon.oms_local.sql.YYYY-MM-ddTHH-mm-ss.log"
 010_perms-pon.oms.sql                     | pon      | oms            | oms@ponp.world.credential        |sqlplus.exe -L "oms/oms_pwd@ponp.world"             @"run.sql" "010_perms-pon.oms.sql"                        "010_perms-pon.oms.sql.YYYY-MM-ddTHH-mm-ss.log"
 012_types-onc.oproc.sql                   | onc      | oproc          | oproc@ondp.world.credential      |sqlplus.exe -L "oproc/oproc_pwd@oncp.world"         @"run.sql" "012_types-onc.oproc.sql"                      "012_types-onc.oproc.sql.YYYY-MM-ddTHH-mm-ss.log"
 110_table.mod.PO_CUSTOMER_LOG-pon.oms.sql | pon      | oms            | oproc@ondp.world.credential      |sqlplus.exe -L "oms/oms_pwd@ponp.world"             @"run.sql" "110_table.mod.PO_CUSTOMER_LOG-pon.oms.sql"    "110_table.mod.PO_CUSTOMER_LOG-pon.oms.sql.YYYY-MM-ddTHH-mm-ss.log"
 120_table.mod.rgh-pon.username.sql        | pon      | $env:username  | %username%@ponp.world.credential |sqlplus.exe -L "oms/oms_pwd@ponp.world"             @"run.sql" "120_table.mod.rgh-pon.username.sql"           "120_table.mod.rgh-pon.username.sql.YYYY-MM-ddTHH-mm-ss.log"
+130_pkg.CHED_ORDER_UTILS-pon.oms.sql      | pon      | oms            | oms@ponp.world.credential        |sqlplus.exe -L "oms/oms_pwd@ponp.world"             @"run.sql" "130_pkg.CHED_ORDER_UTILS-pon.oms.sql"         "130_pkg.CHED_ORDER_UTILSs-pon.oms.sql.YYYY-MM-ddTHH-mm-ss.log"
 
 
 **Regular Expressions**
@@ -133,3 +135,17 @@ value                                 | wild cards / regular expression         
 :---                                  |:---                                                         |:----
 `oms@ponp.world.credential `          |     todo                                                    |
 `"120_table.mod.rgh-pon.username.sql"`|`("[0-9_][0-9_][0-9_]_*-*.sql", "[0-9_][0-9_][a-z]_*-*.sql")`|
+
+
+Collection of useful PowerShell cmdlets.
+
+~~~
+import-module GisOmsUtils -verbose
+
+get-module GisOmsUtils | select -expand ExportedCommands
+$(get-module GisOmsUtils).ExportedCommands.Keys
+~~~
+
+~~~
+$(get-module GisOmsUtils).ExportedCommands.Keys |% {get-help $_}
+~~~

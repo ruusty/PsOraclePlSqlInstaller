@@ -1,9 +1,6 @@
 @echo off
 @rem ============================================================================
-@rem
-@rem     Project :
-@rem
-@rem        Date : 2016-04-15
+@rem        Date : 2017-05-14
 @rem
 @rem    Function : Pl/Sql installer
 @rem
@@ -14,7 +11,7 @@
 setlocal ENABLEDELAYEDEXPANSION
 @cls
 @echo off
-@set buildfile=sql.default.ps1
+@set buildfile=sqlplus.psake.ps1
 @echo.MSG00^>Running:%~nx0
 for %%i in (
 ""
@@ -51,8 +48,9 @@ whoami
 @rem
 @echo on
 @rem call psake "%buildfile%" -properties "@{cfg_sqlSpec=@('[0-9_][0-9_][0-9_]_*-*.sql','[0-9_][0-9_][a-z]_*-*.sql');verbose=$false;whatif=$true;sdlc='%sdlc%'}" " %~1
-@rem call psake sql.default.ps1 -properties "@{cfg_sqlSpec=@('[0-9_][0-9_][0-9_]_*-*.sql');verbose=$false;sdlc='%sdlc%';whatif=$true;}" %1 %2 %3
-call psake sql.default.ps1 -properties "@{cfg_sqlSpec=@('[0-9_][0-9_][0-9_]_*-*.sql');verbose=$false;sdlc='%sdlc%';whatif=$false;}" %1 %2 %3
+@rem call psake "%buildfile%" -properties "@{cfg_sqlSpec=@('[0-9_][0-9_][0-9_]_*-*.sql');verbose=$false;sdlc='%sdlc%';whatif=$true;}" %1
+@rem call psake "%buildfile%" -properties "@{cfg_sqlSpec=@('[0-9_][0-9_][0-9_]_*-*.sql');verbose=$true;sdlc='%sdlc%';whatif=$false;}" %1
+call psake "%buildfile%" -properties "@{verbose=$false;sdlc='%sdlc%'}" %1
 
 @echo.MSG99^>%~nx0:ERRORLEVEL=%ERRORLEVEL%
 @echo on

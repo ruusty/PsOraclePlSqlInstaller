@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<project name="NantMenu" default="build">
+    <description>Build file NantMenu</description>
+    <property name="proj.topdir" value="${path::get-directory-name(project::get-buildfile-path())}"/>
+    <target name="build" description="Does the full build and copies the deliverable to Delivery share">
+        <exec program="cmd.exe" verbose="true" workingdir="${proj.topdir}" failonerror="true">
+            <arg line="/C"/>
+            <arg line="psake"/>
+            <arg line="build.psake.ps1"/>
+            <arg line="build"/>
+        </exec>
+    </target>
+
+
+    <target name="compile" description="Build Deliverable">
+        <exec program="cmd.exe" verbose="true" workingdir="${proj.topdir}" failonerror="true">
+            <arg line="/C"/>
+            <arg line="psake"/>
+            <arg line="build.psake.ps1"/>
+            <arg line="compile"/>
+        </exec>
+    </target>
+
+        <target name="set-buildList" description="Create a list of file that should be in the zip file">
+        <exec program="cmd.exe" verbose="true" workingdir="${proj.topdir}" failonerror="true">
+            <arg line="/C"/>
+            <arg line="psake"/>
+            <arg line="build.psake.ps1"/>
+            <arg line="set-buildList"/>
+        </exec>
+    </target>
+
+    <target name="test-build" description="Test the Build">
+        <exec program="cmd.exe" verbose="true" workingdir="${proj.topdir}" failonerror="true">
+            <arg line="/C"/>
+            <arg line="psake"/>
+            <arg line="build.psake.ps1"/>
+            <arg line="test-build"/>
+        </exec>
+    </target>
+
+
+
+    <target name="help" description="Help descriptions">
+        <echo message="Compiles ${proj.build.name} to a package with versioning"/>
+        <echo message='nant -buildfile:"${project::get-buildfile-path()}" -projecthelp'/>
+        <exec program="nant" workingdir="${proj.topdir}">
+            <arg line='-buildfile:"${project::get-buildfile-path()}" -projecthelp'/>
+        </exec>
+    </target>
+
+
+    <target name="fail">
+        <echo message="Notifying you of a failure in the build process."/>
+    </target>
+
+</project>
+
+

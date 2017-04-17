@@ -15,7 +15,11 @@ CHED Services
 # Table of Contents
 
 - [Description](#description)
+- [Usage](#usage)
+- [Examples](#examples)
 - [Notes](#notes)
+
+
 
 <a name="description"></a>
 ## Description [&uarr;](#TOC) ##
@@ -35,14 +39,56 @@ $(get-module OraclePlsqlInstaller).ExportedCommands.Keys
 $(get-module OraclePlsqlInstaller).ExportedCommands.Keys |% {get-help $_}
 ~~~
 
+<a name="usage"></a>
+## Usage [&uarr;](#TOC) ##
+
+Typically the *OraclePlsqlInstaller* module is used under the orchestration of `sqlplus.psake.ps1`.
+
+The top level command is *Get-SqlPlusCommands* to return a hash table of `sqlplus.exe` commands.
+
+~~~
+ $initArgs = @{
+    directory =  
+    sqlSpec = $cfg_sqlSpec;
+    logFileSuffix = $IsoDateTimeStr;
+    netServiceNames = Set-SdlcConnections $sdlc.ToUpper();
+    verbose = $verbose;
+  }
+  $script:sqlCommands = Get-SqlPlusCommands @initArgs
+  $script:sqlCommands | Out-String | write-verbose
+~~~
+
+These are then executed by psake task *Invoke-Sqlplus*.
+
+See [sqlplus.psake.ps1](file:./../sqlplus.psake.ps1)
+
+
+<a name="examples"></a>
+## Examples [&uarr;](#TOC) ##
+
+~~~
+import-module R:\Projects-Ruusty\PSOraclePlSqlInstaller\OraclePlsqlInstaller\OraclePlsqlInstaller.psm1
+get-module OraclePlsqlInstaller | select -expand ExportedCommands
+$(get-module OraclePlsqlInstaller).ExportedCommands.Keys |% {get-help $_}
+
+~~~
+
+~~~
+Show-OracleSecret *.credential
+~~~
+
+~~~
+Start-Exe ping.exe 
+~~~
+
 
 <a name="notes"></a>
 ## Notes [&uarr;](#TOC) ##
 
-Hash table for each *.sql file
 
+- Pester test are incomplete.
 
-
+- Hash table for each *.sql file
 
 ~~~
    $details = @{
@@ -57,7 +103,7 @@ Hash table for each *.sql file
             sqlplusArgs = @()
 ~~~
 
-Now to validate
+Then can validate
 
 
 ~~~

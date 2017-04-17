@@ -31,6 +31,8 @@
     <File Build="2" Shared="False">OraclePlsqlInstaller\Public\Test-OracleConnections.ps1</File>
     <File Build="2" Shared="False">OraclePlsqlInstaller\Public\Test-OracleConnections.Tests.ps1</File>
     <File Build="2" Shared="False">OraclePlsqlInstaller\Public\Show-OracleSecret.ps1</File>
+    <File Build="2" Shared="False">OraclePlsqlInstaller\Public\Start-Exe.Tests.ps1</File>
+    <File Build="2" Shared="False">OraclePlsqlInstaller\Public\Start-Exe.ps1</File>
   </Files>
   <DeployMode>Project</DeployMode>
   <PrimaryFile>

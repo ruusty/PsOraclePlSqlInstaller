@@ -16,3 +16,5 @@ test-credential.ps1
 test-validate.ps1
 *.psprojs
 /_msg.txt
+*.TempPoint.psd1
+*.git_history.txt

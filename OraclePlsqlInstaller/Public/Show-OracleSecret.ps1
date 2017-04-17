@@ -12,7 +12,7 @@ function Show-OracleSecret
     The path of the credential file
   
   .EXAMPLE
-    PS C:\> .\show-OraSecret.ps1 russell@pond.world.credential
+    PS C:\> .\show-OracleSecret.ps1 russell@pond.world.credential
   
   .NOTES
     If the credential was not created by the user an error happens
@@ -21,22 +21,36 @@ function Show-OracleSecret
   [CmdletBinding()]
   param
   (
-    [Parameter(Mandatory = $true,
+    [Parameter( ValueFromPipeline = $true,
                Position = 1)]
-    [string]$Path
+    [string[]]$Path = "*.credential"
   )
-  Resolve-Path -Path $Path | %{
-    $Credential = Import-Clixml $_
-    $user = $Credential.GetNetworkCredential().username
-    $PW = $Credential.GetNetworkCredential().Password
-    $name = [System.IO.Path]::GetFileNameWithoutExtension($_)
-    Write-Verbose $("`$name=$name" -f $name)
-    #parse out the connection_identifier string
-    $connect_identifier = "notset"
-    if ($name -match '^([A-Za-z_]+)@([A-Za-z0-9_\.]+$)')
+  BEGIN
+  {
+    #region Initialization code
+    $PSBoundParameters | format-list -Expand CoreOnly -Property Keys, Values | Out-String | Write-Verbose
+    foreach ($Parameter in (Get-Command -Name $PSCmdlet.MyInvocation.InvocationName).Parameters)
     {
-      $connect_identifier = $matches[2]
+      $("Attempting " + $PSCmdlet.MyInvocation.InvocationName), $(Get-Variable -Name $Parameter.Values.Name -ErrorAction SilentlyContinue) | Out-String | write-verbose
     }
-    $("{0}/{1}@{2}" -f $user, $PW, $connect_identifier)
+    Write-Verbose $("in-process {0}" -f $PSCmdlet.MyInvocation.InvocationName)
+    #endregion Initialization code
+  }
+  PROCESS
+  {
+    Resolve-Path -Path $Path | %{
+      $Credential = Import-Clixml $_
+      $user = $Credential.GetNetworkCredential().username
+      $pwd = $Credential.GetNetworkCredential().Password
+      $name = [System.IO.Path]::GetFileNameWithoutExtension($_)
+      Write-Verbose $("`$name=$name" -f $name)
+      #parse out the connection_identifier string
+      $connect_identifier = "notset"
+      if ($name -match '^([A-Za-z_]+)@([A-Za-z0-9_\.]+$)')
+      {
+        $connect_identifier = $matches[2]
+      }
+      $("{0}/{1}@{2}" -f $user, $pwd, $connect_identifier)
+    }
   }
 }

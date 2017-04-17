@@ -17,15 +17,10 @@ Discover the available targets
 
 @psake -docs
 
-.EXAMPLE
-
-Test the configuration and connection to the database schemas required to apply the scripts (no changes)
-
-install dev TestConnect
 
 .EXAMPLE
 
-install dev
+psake sqlplus.psake.ps1 -properties "@{verbose=$true;sdlc='DEV';whatif=$false;}" 
 
 Runs the Pl/sql files in the current directory matching the pattern
 
@@ -45,7 +40,11 @@ Sample filename matching this pattern
 install dev run
 
 .EXAMPLE
-  psake sql.default.ps1 -properties "@{verbose=$false}" accept
+  psake sqlplus.psake.ps1 -properties "@{verbose=$false}" accept
+  psake sqlplus.psake.ps1 -properties "@{verbose=$false}" accept
+  psake sqlplus.psake.ps1 -properties "@{verbose=$true;sdlc='DEV';whatif=$false;}" Show-Settings,Show-Passwords
+  psake sqlplus.psake.ps1 -properties "@{verbose=$true;sdlc='DEV';whatif=$false;}" Show-SqlCommands
+
 
 .NOTES
 
@@ -59,21 +58,21 @@ Set-StrictMode -Version 4
 $me = $MyInvocation.MyCommand.Definition
 filter Skip-Empty { $_ | ?{ $_ -ne $null -and $_ } }
 
-Import-Module $(Join-Path  $PSScriptRoot "OraclePlsqlInstaller\OraclePlsqlInstaller.psm1") -verbose
+Import-Module $(Join-Path  $PSScriptRoot "OraclePlsqlInstaller\OraclePlsqlInstaller.psm1") 
 
-FormatTaskName "`r`n[-----{0}------]`r`n"
+FormatTaskName "`r`n[------{0}------]`r`n"
 
-task unit-test -depends Clean, Init, Start-Logging, Show-Settings, Accept, Invoke-sqlplus, Stop-Logging, Archive, Result
- 
-task default -depends run
+task unit-test -depends Clean, Init, Start-Logging, Show-Settings, Accept, Invoke-sqlplus, Stop-Logging, Archive, Result -description ="Testing only"
 
-Task run -depends Clean, Init, Start-Logging, Show-Settings, Test-Connect, Accept, Invoke-sqlplus, Stop-Logging, Archive, Result  -description "Do it" 
+task default -depends install
+
+Task install -depends Clean, Init, Start-Logging, Show-Settings, Test-Connect, Accept, Invoke-sqlplus, Stop-Logging, Archive, Result  -description "Install pl/sql files into database using sqlplus.exe"
 
 properties {
   $script:config_vars = @()
   # Add variable names to $config_vars to display their values
   $script:config_vars += @(
-      'cfg_sqlSpec'
+    'cfg_sqlSpec'
      ,'IsoDateTimeStr'
      ,'JobDir'
      ,'JobName'
@@ -85,7 +84,8 @@ properties {
      ,"whatif"
      ,"sdlc"
      ,"zipExe"
-    ,"zipArgs"
+     ,"sqlplusExe"
+     ,"zipArgs"
   )
   $verbose = $false;
   $whatif = $false;
@@ -95,7 +95,7 @@ properties {
   write-host($VerbosePreference)
   Set-Variable -Name "JobName" -Description "Literal Path of the directory containing the psake file and associated sql files." -value $(Split-Path -Path $executionContext.SessionState.Path.CurrentLocation -Leaf)
   Set-Variable -Name "JobDir" -Description "Literal Path of the directory containing the psake file and associated sql files." -value $($executionContext.SessionState.Path.CurrentLocation)
-  Set-Variable -Name "sdlc"  -Description "System Development Lifecycle Environment" -Value "UNKNOWN"
+  Set-Variable -Name "sdlc" -Description "System Development Lifecycle Environment" -Value "UNKNOWN"
   Set-Variable -Name "IsoDateTimeStr" -Description "Time and Date Stamp string" -Value $now.ToString("yyyy-MM-ddTHH-mm-ss")
   Set-Variable -Name "cfg_sqlSpec" -Description "Sql file wild cards spec" -value @('[0-9_][0-9_][0-9_]_*-*.sql', '[0-9_][0-9_][a-z]_*-*.sql')
   Set-Variable -Name "PoshLogPathAbs" -Description "Powershell logging file used by Start-Transcript" -value $(join-path -Path $JobDir -ChildPath $($JobName + "." + $sdlc + "." + $IsoDateTimeStr + ".log"))
@@ -103,20 +103,14 @@ properties {
   Set-Variable -Name "ArchiveZipPath" -Description "ArchiveZipPath" -value $(join-path -Path $JobDir -ChildPath $($JobName + "." + $sdlc + "." + $IsoDateTimeStr + ".zip"))
   Set-Variable -Name "ArchiveZipContentFileSpec" -Description "ArchiveZipContentFileSpec" -value $(join-path -Path $JobDir -ChildPath "*.log")
   $zipExe = "7z.exe"
-  $zipArgs = @("-9j", $('"{0}"' -f $ArchiveZipPath), $('"{0}"' -f $ArchiveZipContentFileSpec))
-  $zipArgs = @("a", "-bt", "-bb2", $('"{0}"' -f $ArchiveZipPath), $('"{0}"' -f $ArchiveZipContentFileSpec))
-  $sqlplusExe="sqlplus.exe"
-  if ($Verbose)
-  {
-    $VerbosePreference = [System.Management.Automation.ActionPreference]::Continue
-  }
-  else
-  {
-    $VerbosePreference = [System.Management.Automation.ActionPreference]::SilentlyContinue
-  }
+  $zipArgs = @("-9j", $('"{0}"' -f $ArchiveZipPath), $('"{0}"' -f $ArchiveZipContentFileSpec)) #zip.exe
+  $zipArgs = @("a", "-bt", "-bb2", $('"{0}"' -f $ArchiveZipPath), $('"{0}"' -f $ArchiveZipContentFileSpec)) #7z.exe
+  $sqlplusExe = "sqlplus.exe"
+  #Variables shared between tasks
   $script:sqlCommands = @()
   $script:confirmation = $false;
 }
+
 
 task Show-Settings -description "Display the psake configuration properties variables" -depends init {
   Write-Verbose("Verbose is on")
@@ -128,13 +122,9 @@ task Show-Settings -description "Display the psake configuration properties vari
 task Show-Passwords -description "Display the passwords in the credential files" -depends init {
   Write-Verbose("Verbose is on")
   $credFiles = $script:sqlCommands | sort -Property credentialFileName -Unique |% { $_.credentialFileName }
-  @($credFiles).GetEnumerator() | %{
-    @{
-      secret = $(OraclePlsqlInstaller\Show-OracleSecret $_);
-      file = $_;
-    } | Out-String | write-host
-  }
+  @($credFiles).GetEnumerator() | Show-OracleSecret  | Out-String | write-host
 }
+
 
 task Show-SqlCommands -description "Display the command" -depends init {
   foreach ($i in $script:sqlCommands)
@@ -143,13 +133,16 @@ task Show-SqlCommands -description "Display the command" -depends init {
     write-host $sqlplusExe, $i.sqlplusArgs
   }
 }
+
+
 task Init -Description "Initialize the environment based on the properties" {
   Write-Verbose("Verbose is on")
   # VerbosePreference doesn't work under psake, must explicity define on the command line
 
   $(get-module OraclePlsqlInstaller).ExportedCommands.Keys | Out-String | write-verbose
   $initArgs = @{
-    directory = Join-Path $PSScriptRoot "OraclePlsqlInstaller\Specification";
+    directory = Join-Path $PSScriptRoot "OraclePlsqlInstaller\Specification"; #TODO Used for testing and development
+    #directory = $PSScriptRoot #TODO 
     sqlSpec = $cfg_sqlSpec;
     logFileSuffix = $IsoDateTimeStr;
     netServiceNames = Set-SdlcConnections $sdlc.ToUpper();
@@ -174,14 +167,14 @@ task Clean -Description "Remove the previous generated files in the JobDir"  {
 task Invoke-Sqlplus -depends Init -Description "Executes sqlplus.exe, Spool file specified as second parameter on command line" -PreCondition { $script:confirmation -eq $true } {
   New-OracleRunFixture
   @($script:sqlCommands).GetEnumerator() | %{
-    Write-Host "Attempting : ", $sqlplusExe . $_.sqlplusArgs
+    Write-Host "Attempting : ", $sqlplusExe  $_.sqlplusArgs
     try
     {
-      Start-Executable "sqlplus.exe" $_.sqlplusArgs -verbose:$verbose -whatif:$whatif
+      Start-Exe $sqlplusExe $_.sqlplusArgs -verbose:$verbose -whatif:$whatif
     }
     catch [Exception] {
       Stop-Transcript -ErrorAction SilentlyContinue
-      Start-Executable $zipExe $zipArgs -verbose:$verbose -whatif:$whatif
+      Start-Exe $zipExe $zipArgs -verbose:$verbose -whatif:$whatif
       $errMsg = $_ | fl * -Force | Out-String
       Write-Host $errMsg
       throw
@@ -200,10 +193,10 @@ task Stop-Logging{
 }
 
 
-task Archive -depends Init -Description "Archive the outputs in data directory to a datetime versioned zip file in the Archive sub-directory" {
+task Archive -depends Init -Description "Archive the outputs in data directory to a datetime versioned zip file" {
   try
   {
-    Start-Executable $zipExe $zipArgs -verbose:$verbose -whatif:$whatif
+    Start-Exe $zipExe $zipArgs -verbose:$verbose -whatif:$whatif
   }
   catch [Exception] {
     $errMsg = $_ | fl * -Force | Out-String
@@ -219,10 +212,14 @@ task Result -description "Success or Failure" {
   }
 }
 
+
 task Show-SettingDetails -Description "Display detailed configuration variables, useful for debugging" {
  Get-Variable | format-table -Wrap | Out-Host
 }
 
+Task Get-DeliverableList -description "Create a list of files that should be in the zip file"{
+  Get-BuildList -BuildPath "Specification.build"
+}
 
 task Accept -Description "Visual confirmation that we are hitting the correct configuration "-depends init{
   foreach ($i in $script:sqlCommands) {

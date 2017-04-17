@@ -4,7 +4,7 @@
 ModuleToProcess = 'OraclePlsqlInstaller.psm1'
 
 # Version number of this module.
-ModuleVersion = '4.3.0.1'
+ModuleVersion = '4.3.0.3'
 
 # ID used to uniquely identify this module
 GUID = '0266FC6C-A26E-4A6A-1E1B-9E2DBDC3F2AA'
