@@ -18,3 +18,4 @@ test-validate.ps1
 /_msg.txt
 *.TempPoint.psd1
 *.git_history.txt
+/TECHNOTES.md
