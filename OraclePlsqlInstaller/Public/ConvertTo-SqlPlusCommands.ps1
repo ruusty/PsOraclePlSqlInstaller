@@ -52,7 +52,7 @@
     }
   #endregion Initialization code
   
-  $sqlfiles = Resolve-Path -Path $sqlPathSpec | sort-object -Unique
+  $sqlfiles = @(Resolve-Path -Path $sqlPathSpec | sort-object -Unique)
     $sqlfiles.GetEnumerator() | Sort | % {
       write-verbose $("Processing {0}" -f $_) #TypeName: System.Management.Automation.PathInfo
       $fname = [System.IO.Path]::GetFileName($_)
@@ -67,7 +67,8 @@
           if ($oraUser -eq "username")
           {
             $oraUser = $env:username
-          }
+        }
+        $credFname = $("{0}@{1}.credential" -f $oraUser, $netServiceNames[$conn[0]])
         [PSCustomObject]@{
             PSTypeName='PSOracle.SqlPlusCmd'
             fileName = $fname
@@ -76,7 +77,7 @@
             databaseIdentifier = $conn[0] # The database type/model 
             tnsName          = $netServiceNames[$conn[0]] # a Net Service Name
             logFileName = [System.IO.Path]::GetFileName($_) + "." + $logFileSuffix + ".log"
-            credentialFileName = $(join-path $directory $($oraUser + "@" + $netServiceNames[$conn[0]] + ".credential"))
+            credentialFileName = $(join-path $directory $credFname)
             oraPassword = ""
             sqlplusArgs = @()
           }
