@@ -106,6 +106,7 @@ properties {
   $zipExe = "7z.exe"
   $zipArgs = @("-9j", $('"{0}"' -f $ArchiveZipPath), $('"{0}"' -f $ArchiveZipContentFileSpec)) #zip.exe
   $zipArgs = @("a", "-bt", "-bb2", $('"{0}"' -f $ArchiveZipPath), $('"{0}"' -f $ArchiveZipContentFileSpec)) #7z.exe
+  $zipArgs = @("a", $('"{0}"' -f $ArchiveZipPath), $('"{0}"' -f $ArchiveZipContentFileSpec)) #7z.exe 9.38
   $sqlplusExe = "sqlplus.exe"
   #Variables shared between tasks
   $script:sqlCommands = @()
