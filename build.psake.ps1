@@ -107,7 +107,7 @@ namespace Build.Utils{
 Add-Type -TypeDefinition $CSharp -Language CSharp -Debug:$false
 
 
-Import-Module "$PSScriptRoot\OraclePlsqlInstaller\OraclePlsqlInstaller.psm1"
+Import-Module OraclePlsqlInstaller
 Import-Module GisOmsUtils
 
 FormatTaskName "`r`n[------{0}------]`r`n"
@@ -140,7 +140,7 @@ properties {
   write-verbose($("CurrentLocation={0}" -f $executionContext.SessionState.Path.CurrentLocation))
   $GlobalPropertiesName=$("GisOms.Chocolatey.properties.{0}.xml" -f $env:COMPUTERNAME)
   $GlobalPropertiesPath = [Build.Utils.Tools]::FindFileUp($PSScriptRoot, $GlobalPropertiesName)
-
+  Write-Host $("{0}" -f $GlobalPropertiesPath) #todo check $GlobalPropertiesPath it not empty or null
   $GlobalPropertiesXML = New-Object XML
   $GlobalPropertiesXML.Load($GlobalPropertiesPath)
   $GitExe = $GlobalPropertiesXML.SelectNodes("/project/property[@name='git.exe']").value
@@ -168,7 +168,10 @@ properties {
   $zipExe = "7z.exe"
   $zipArgs = 'a -bb2 -tzip "{0}" -ir0@"{1}"' -f $ProjPackageZipPath, $ProjPackageListPath # Get paths from file
   $zipArgs = 'a -bb2 -tzip "{0}" -ir0!*' -f $ProjPackageZipPath #Everything in $ProjBuildPath
-  
+
+  $zipArgs = 'a  -tzip "{0}" -ir0@"{1}"' -f $ProjPackageZipPath, $ProjPackageListPath # Get paths from file  #7z.exe 9.38
+  $zipArgs = 'a  -tzip "{0}" -ir0!*' -f $ProjPackageZipPath #Everything in $ProjBuildPath  #7z.exe 9.38
+
   Write-Host "Verbose: $verbose"
   Write-Verbose "Verbose"
   
@@ -192,24 +195,13 @@ task compile -description "Build Deliverable zip file" -depends clean, git-histo
   $versionNum = Get-Content $ProjVersionPath
 
   $copyArgs = @{
-    path = @( "$ProjTopdir\PlSql-sample-installers\*", "$ProjTopdir\README.md", $ProjHistoryPath, $ProjVersionPath , "$ProjTopdir/install.bat", "$ProjTopdir/sqlplus.psake.ps1", "$ProjTopdir\OraclePlsqlInstaller\Specification\*") # TODO
+    path = @("*.sql","OMS","$ProjTopdir\README.md", $ProjHistoryPath, $ProjVersionPath , "$ProjTopdir/install.bat", "$ProjTopdir/sqlplus.psake.ps1" ) # TODO
     exclude = @("*.log", "*.html", "*.credential", "*.TempPoint.psd1", "*.TempPoint.ps1", "*.Tests.ps1")
     destination = $ProjBuildPath
     recurse = $true
   }
   Write-Host "Attempting to get Pl/Sql deliverables"
   Copy-Item @copyArgs -verbose:$verbose
-  
-  Write-Host "Attempting to get OraclePlsqlInstaller Module"
-  $copyArgs = @{
-    path = @("$ProjTopdir\OraclePlsqlInstaller") # TODO
-    exclude = @("*.log", "*.html", "*.credential", "*.TempPoint.psd1", "*.TempPoint.ps1", "*.Tests.ps1")
-    destination = Join-Path $ProjBuildPath "OraclePlsqlInstaller"
-    recurse = $true
-  }
-  Copy-Item @copyArgs -verbose:$verbose
-  $SpecificationPath = "$ProjBuildPath\OraclePlsqlInstaller\Specification"
-  if ((Test-Path $SpecificationPath )) { Remove-Item $SpecificationPath -Recurse -force }
   
   
   Push-Location $ProjBuildPath;
@@ -222,6 +214,10 @@ task compile -description "Build Deliverable zip file" -depends clean, git-histo
     $plSql = get-content $plsqlVersionPath | %{ $_.replace('@ProductVersion@', $versionNum) }
     $plSql  | set-content $plsqlVersionPath
   }
+  
+  Write-Host "Attempting version stamp pls/sql source "
+  [void][Build.Utils.Version]::RegexVersionPlSql($(Join-Path $ProjBuildPath "OMS\sql_packages\OMS.PLANNED_OUTAGE.pkb"), $versionNum)
+  
   
   Write-Host "Attempting convert markdown to html"
   import-module -verbose:$verbose md2html; convertto-mdhtml -verbose:$verbose  -recurse
@@ -310,12 +306,10 @@ task Show-Settings -description "Display the psake configuration properties vari
 
 
 task set-buildList -description "Generate the list of files to go in the zip deliverable"  {
-  Push-Location $ProjBuildPath
+  Push-Location $ProjTopdir
   #get the paths referenced by the Top level sql file
-  $FileInZip = Get-BuildList -ProjectName $ProjectName -sqlSpec @("[0-9_][0-9_][0-9_]_*-*.sql", "[0-9_][0-9_][a-z]_*-*.sql") -verbose:$verbose
+  $FileInZip = Get-BuildList -ProjectName $ProjectName -sqlSpec @("[0-9_][0-9_][0-9_]_*-*.sql", "[0-9_][0-9_][a-z]_*-*.sql") -logsuffix @(".Build.Number", ".git_history.txt") -verbose:$verbose
   Pop-Location
-  #get the Module files
-  $FileInZip += get-childitem -Path @("$ProjTopdir\OraclePlsqlInstaller\Public\*.ps1", "$ProjTopdir\OraclePlsqlInstaller\Private\*.ps1", "$ProjTopdir\OraclePlsqlInstaller\*.ps??", "$ProjTopdir\OraclePlsqlInstaller\README.*") -recurse | %{ $_.FullName.Replace("$ProjTopdir\", "") } | %{ if ($_ -notlike "*.Tests.ps1") { $_ } }
   $FileInZip | sort -Unique | Set-Content $ProjPackageListPath
 }
 

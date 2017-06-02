@@ -40,7 +40,7 @@ function Get-BuildList
     [String[]]$sqlSpec = $("[0-9_][0-9_][0-9_]_*-*.sql", "[0-9_][0-9_][a-z]_*-*.sql"),
     [string]$ProjectName = $([System.IO.Path]::GetFileName($PWD)),
     [string[]]$prolog = @('README.md','README.html', 'install.bat', 'sqlplus.psake.ps1' ),
-    [string[]]$logsuffix = @(".Build.Number", ".git_history.log")
+    [string[]]$logsuffix = @(".Build.Number", ".git_history.txt")
   )
   #region Initialization code
   "PSBoundParameters",$PSBoundParameters.GetEnumerator() | ForEach {

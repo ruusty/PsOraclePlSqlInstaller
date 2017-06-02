@@ -53,12 +53,13 @@ Requires psake
 https://github.com/psake/psake
 
 #>
+#$VerbosePreference= 'Continue'
 Framework '4.0'
 Set-StrictMode -Version 4 
 $me = $MyInvocation.MyCommand.Definition
 filter Skip-Empty { $_ | ?{ $_ -ne $null -and $_ } }
 
-Import-Module $(Join-Path  $PSScriptRoot "OraclePlsqlInstaller\OraclePlsqlInstaller.psm1") 
+Import-Module OraclePlsqlInstaller
 
 FormatTaskName "`r`n[------{0}------]`r`n"
 
@@ -105,6 +106,7 @@ properties {
   $zipExe = "7z.exe"
   $zipArgs = @("-9j", $('"{0}"' -f $ArchiveZipPath), $('"{0}"' -f $ArchiveZipContentFileSpec)) #zip.exe
   $zipArgs = @("a", "-bt", "-bb2", $('"{0}"' -f $ArchiveZipPath), $('"{0}"' -f $ArchiveZipContentFileSpec)) #7z.exe
+  $zipArgs = @("a", $('"{0}"' -f $ArchiveZipPath), $('"{0}"' -f $ArchiveZipContentFileSpec)) #7z.exe 9.38
   $sqlplusExe = "sqlplus.exe"
   #Variables shared between tasks
   $script:sqlCommands = @()
@@ -141,8 +143,7 @@ task Init -Description "Initialize the environment based on the properties" {
 
   $(get-module OraclePlsqlInstaller).ExportedCommands.Keys | Out-String | write-verbose
   $initArgs = @{
-    directory = Join-Path $PSScriptRoot "OraclePlsqlInstaller\Specification"; #TODO Used for testing and development
-    #directory = $PSScriptRoot #TODO 
+    directory = $PSScriptRoot 
     sqlSpec = $cfg_sqlSpec;
     logFileSuffix = $IsoDateTimeStr;
     netServiceNames = Set-SdlcConnections $sdlc.ToUpper();
@@ -155,7 +156,7 @@ task Init -Description "Initialize the environment based on the properties" {
 
 
 task Test-Connect -depends Init -description "Test username and password connections"{
-   $script:sqlCommands | Test-OracleConnections -sqlplusExe "sqlplus.exe" -verbose:$verbose -whatif:$whatif
+  $script:sqlCommands | Test-OracleConnections -sqlplusExe "sqlplus.exe" -verbose:$verbose -whatif:$whatif
 }
 
 
