@@ -36,6 +36,7 @@ function Set-OracleUserPassword
   {
     $pwdFname = $sqlPlusCommand.credentialFileName
     $parentPwdDir = Split-Path -Parent -Path $sqlPlusCommand.credentialFileName
+    $parentPwdDir = Split-Path -Parent -Path $parentPwdDir
     $parentPwdFname = Join-Path $parentPwdDir $([System.IO.Path]::GetFileName($sqlPlusCommand.credentialFileName))
     if (Test-Path $parentPwdFname) { $pwdFname = $parentPwdFname }
     if ($pwdFname -and (Test-Path $pwdFname))
