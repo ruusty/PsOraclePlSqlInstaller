@@ -17,98 +17,8 @@ Framework '4.0'
 Set-StrictMode -Version 4
 $me = $MyInvocation.MyCommand.Definition
 filter Skip-Empty { $_ | ?{ $_ -ne $null -and $_ } }
-$CSharp =
-@'
-using System;
-using System.IO;
-namespace Build.Utils{
-    public static class Version {
 
-        public static string RegexVersionPlSql(string pFileName, string pVersion){
-            string s = "";     //Line containg the version: gr_VERSION constant VARCHAR2(200) := '4.3.0.0';
-            using ( System.IO.StreamReader sr = new System.IO.StreamReader(pFileName) ) {
-                s = @sr.ReadToEnd();
-            }
-            System.Text.RegularExpressions.RegexOptions   options = (System.Text.RegularExpressions.RegexOptions.Multiline | System.Text.RegularExpressions.RegexOptions.IgnoreCase);
-            System.Text.RegularExpressions.Regex          re = new System.Text.RegularExpressions.Regex(@"(?<versionProlog>^\s*gr_VERSION\s+CONSTANT\s+VARCHAR2\(\d{3,}\)\s*:=\s*')(?<verionsNum>[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+)(?<versionSuffix>'\s*;)", options);
-            string         replacement = String.Format("${{versionProlog}}{0}${{versionSuffix}}", pVersion);
-            s = re.Replace(@s, replacement);
-            using ( System.IO.StreamWriter sw = new System.IO.StreamWriter(pFileName, false, System.Text.Encoding.ASCII) ) {
-                sw.Write(s);
-            }
-            return (replacement);
-        }
-
-
-        public static string RegexVersionModule(string pFileName, string pVersion){
-            string s = "";     // string pVersion="4.3.1111.2222";
-            using ( System.IO.StreamReader sr = new System.IO.StreamReader(pFileName) ) {
-                s = @sr.ReadToEnd();
-            }
-            System.Text.RegularExpressions.RegexOptions   options = System.Text.RegularExpressions.RegexOptions.Multiline;
-            System.Text.RegularExpressions.Regex          re = new System.Text.RegularExpressions.Regex(@"^ModuleVersion.*", options);
-            string         replacement = String.Format("ModuleVersion = '{0}'", pVersion);
-
-/*         Console.WriteLine(pFileName);
-         Console.WriteLine(pVersion);
-         Console.WriteLine(replacement);
-*/
-            s = re.Replace(@s, replacement);
-
-            using ( System.IO.StreamWriter sw = new System.IO.StreamWriter(pFileName, false, System.Text.Encoding.ASCII) ) {
-                sw.Write(s);
-            }
-            return (s);
-        }
-
-        public static string RegexVersionReadme(string pFileName, string pVersion ,  string pDate){
-            string s = "";     // string pVersion="01.01.01"; string pDate="15 may";
-            using ( System.IO.StreamReader sr = new System.IO.StreamReader(pFileName) ) {
-                s = @sr.ReadToEnd();
-            }
-            System.Text.RegularExpressions.RegexOptions   options = System.Text.RegularExpressions.RegexOptions.Multiline;
-            System.Text.RegularExpressions.Regex          re = new System.Text.RegularExpressions.Regex(@"(?<ver>Version: *)([0-9.]+)(?<term>[\r|\n]+)(?<date>Date: *)([\w \d\-\/\.T]*)", options);
-            string         replacement = String.Format("${{ver}}{0}${{term}}${{date}}{1}", pVersion, pDate);
-
-            //Console.WriteLine(replacement);
-            s = re.Replace(@s, replacement);
-
-
-            using ( System.IO.StreamWriter sw = new System.IO.StreamWriter(pFileName, false, System.Text.Encoding.ASCII) ) {
-                sw.Write(s);
-
-            }
-            return (s);
-        }
-
-    }
-
-
-    public static class Tools {
-        public static String FindFileUp(string cwd, string fileName){
-            string startPath = Path.Combine(Path.GetFullPath(cwd), fileName);
-            FileInfo file = new FileInfo(startPath);
-            while ( !file.Exists ) {
-                if ( file.Directory.Parent == null ) {
-                    return null;
-                }
-                DirectoryInfo parentDir = file.Directory.Parent;
-                file = new FileInfo(Path.Combine(parentDir.FullName, file.Name));
-            }
-            return file.FullName;
-        }
-    }
-
-
-}
-
-
-'@
-Add-Type -TypeDefinition $CSharp -Language CSharp -Debug:$false
-
-
-Import-Module OraclePlsqlInstaller
-Import-Module GisOmsUtils
+Import-Module Ruusty.PSReleaseUtilities -verbose
 
 FormatTaskName "`r`n[------{0}------]`r`n"
 properties {
@@ -130,7 +40,6 @@ properties {
      ,"ProjVersionPath"
      ,"ProjHistorySinceDate"
      ,"ProjDeliveryPath"
-     ,"ProjVersionNumber"
     ,"ProjPackageZipVersionPath"
     ,"sdlc"
   )
@@ -139,8 +48,8 @@ properties {
   $now = [System.DateTime]::Now
   write-verbose($("CurrentLocation={0}" -f $executionContext.SessionState.Path.CurrentLocation))
   $GlobalPropertiesName=$("GisOms.Chocolatey.properties.{0}.xml" -f $env:COMPUTERNAME)
-  $GlobalPropertiesPath = [Build.Utils.Tools]::FindFileUp($PSScriptRoot, $GlobalPropertiesName)
-  Write-Host $("{0}" -f $GlobalPropertiesPath) #todo check $GlobalPropertiesPath it not empty or null
+  $GlobalPropertiesPath = Ruusty.PSReleaseUtilities\Find-FileUp "GisOms.Chocolatey.properties.pca16128.xml" -verbose
+  Write-Host $('$GlobalPropertiesPath:{0}' -f $GlobalPropertiesPath)
   $GlobalPropertiesXML = New-Object XML
   $GlobalPropertiesXML.Load($GlobalPropertiesPath)
   $GitExe = $GlobalPropertiesXML.SelectNodes("/project/property[@name='git.exe']").value
@@ -154,11 +63,11 @@ properties {
   $ProjDistPath = Join-Path $ProjTopdir "Dist"
   $ProjPackageListPath = Join-Path $ProjTopdir "${ProjectName}.lis"
   $ProjPackageZipPath = Join-Path $ProjDistPath  "${ProjectName}.zip"
-  $ProjDeliveryPath = Join-Path $(Join-Path $CoreDeliveryDirectory ${ProjectName})  '${versionNum}'
-  $ProjPackageZipVersionPath = Join-Path $ProjDeliveryPath  '${ProjectName}.${versionNum}.zip'
+  #$ProjDeliveryPath = Join-Path $(Join-Path $CoreDeliveryDirectory ${ProjectName})  '${versionNum}'
+  $ProjDeliveryPath = Join-Path $PSScriptRoot "..\Deploy"
+  
+  $ProjPackageZipVersionPath = Join-Path $ProjDeliveryPath  '${ProjectName}.${versionNum}.zip'  #Expand dynamically versionNum not set
 
-  $ProjBuildDateTime = $now.ToString("yyyy-MM-ddTHH-mm")
-  $ProjVersionNumber = Get-VersionNumber -Major 4 -Minor 3
 
   $ProjHistoryPath = Join-Path $ProjTopdir  "${ProjectName}.git_history.txt"
   $ProjVersionPath = Join-Path $ProjTopdir   "${ProjectName}.Build.Number"
@@ -169,8 +78,8 @@ properties {
   $zipArgs = 'a -bb2 -tzip "{0}" -ir0@"{1}"' -f $ProjPackageZipPath, $ProjPackageListPath # Get paths from file
   $zipArgs = 'a -bb2 -tzip "{0}" -ir0!*' -f $ProjPackageZipPath #Everything in $ProjBuildPath
 
-  $zipArgs = 'a  -tzip "{0}" -ir0@"{1}"' -f $ProjPackageZipPath, $ProjPackageListPath # Get paths from file  #7z.exe 9.38
-  $zipArgs = 'a  -tzip "{0}" -ir0!*' -f $ProjPackageZipPath #Everything in $ProjBuildPath  #7z.exe 9.38
+  $zipArgs = 'a  -tzip "{0}" -ir0@"{1}"' -f $ProjPackageZipPath, $ProjPackageListPath # Get paths from file #7z.exe 9.38
+  $zipArgs = 'a  -tzip "{0}" -ir0!*' -f $ProjPackageZipPath #Everything in $ProjBuildPath #7z.exe 9.38
 
   Write-Host "Verbose: $verbose"
   Write-Verbose "Verbose"
@@ -193,7 +102,7 @@ task create-dirs {
 
 task compile -description "Build Deliverable zip file" -depends clean, git-history, create-dirs {
   $versionNum = Get-Content $ProjVersionPath
-
+  $version = [system.Version]::Parse($versionNum)
   $copyArgs = @{
     path = @("*.sql","OMS","$ProjTopdir\README.md", $ProjHistoryPath, $ProjVersionPath , "$ProjTopdir/install.bat", "$ProjTopdir/sqlplus.psake.ps1" ) # TODO
     exclude = @("*.log", "*.html", "*.credential", "*.TempPoint.psd1", "*.TempPoint.ps1", "*.Tests.ps1")
@@ -206,19 +115,19 @@ task compile -description "Build Deliverable zip file" -depends clean, git-histo
   
   Push-Location $ProjBuildPath;
   Write-Host "Attempting Versioning"
-  [void][Build.Utils.Version]::RegexVersionReadme("$ProjBuildPath/README.md", $versionNum, $ProjBuildDateTime)
+  Ruusty.PSReleaseUtilities\set-VersionReadme "$ProjBuildPath/README.md"  $version  $now
+  
+  #Version any Packages
+  $pkgPath = Join-Path $ProjBuildPath "OMS\sql_packages\OMS.PLANNED_OUTAGE.pkb"
+  Ruusty.PSReleaseUtilities\Set-VersionPlSql $pkgPath $version
   
   $plsqlVersionPath = Join-Path $ProjBuildPath "990_Version-pon.oms.sql"
   if (Test-Path $plsqlVersionPath )
   {
-    $plSql = get-content $plsqlVersionPath | %{ $_.replace('@ProductVersion@', $versionNum) }
-    $plSql  | set-content $plsqlVersionPath
+    Ruusty.PSReleaseUtilities\Set-Token $plsqlVersionPath 'ProductVersion' $versionNum
   }
   
-  Write-Host "Attempting version stamp pls/sql source "
-  [void][Build.Utils.Version]::RegexVersionPlSql($(Join-Path $ProjBuildPath "OMS\sql_packages\OMS.PLANNED_OUTAGE.pkb"), $versionNum)
-  
-  
+ 
   Write-Host "Attempting convert markdown to html"
   import-module -verbose:$verbose md2html; convertto-mdhtml -verbose:$verbose  -recurse
   
@@ -253,9 +162,9 @@ task clean -description "Remove all generated files" -depends clean-dirs{
 }
 
 task set-version -description "Create the file containing the version" {
-  Set-Content $ProjVersionPath $ProjVersionNumber
+  $version = Ruusty.PSReleaseUtilities\Get-Version 4 3
+  Set-Content $ProjVersionPath $version.ToString()
   Write-Host $("Version:{0}" -f $(Get-Content $ProjVersionPath))
-  Write-Host $("Date   :{0}" -f $ProjBuildDateTime)
 }
 
 task tag-version -description "Create a tag with the version number" {
@@ -264,7 +173,7 @@ task tag-version -description "Create a tag with the version number" {
   
 }
 
-task get-version -description "Display the version" {
+task Display-version -description "Display the current version" {
   $versionNum = Get-Content $ProjVersionPath
   Write-Host $("Version:{0}" -f $versionNum)
 }
