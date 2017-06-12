@@ -58,8 +58,15 @@ Framework '4.0'
 Set-StrictMode -Version 4 
 $me = $MyInvocation.MyCommand.Definition
 filter Skip-Empty { $_ | ?{ $_ -ne $null -and $_ } }
+if (Test-Path "$PSScriptRoot/OraclePlsqlInstaller/OraclePlsqlInstaller.psm1")
+{
+  Import-Module "$PSScriptRoot/OraclePlsqlInstaller/OraclePlsqlInstaller.psm1"
+}
+else
+{
+  Import-Module OraclePlsqlInstaller
+}
 
-Import-Module OraclePlsqlInstaller
 
 FormatTaskName "`r`n[------{0}------]`r`n"
 
@@ -143,7 +150,8 @@ task Init -Description "Initialize the environment based on the properties" {
 
   $(get-module OraclePlsqlInstaller).ExportedCommands.Keys | Out-String | write-verbose
   $initArgs = @{
-    directory = $PSScriptRoot 
+    #directory       = $PSScriptRoot
+    directory       = Join-Path $PSScriptRoot "OraclePlsqlInstaller\Specification"; #TODO Used for testing and development
     sqlSpec = $cfg_sqlSpec;
     logFileSuffix = $IsoDateTimeStr;
     netServiceNames = Set-SdlcConnections $sdlc.ToUpper();

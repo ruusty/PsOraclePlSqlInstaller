@@ -50,7 +50,8 @@ whoami
 @rem call psake "%buildfile%" -properties "@{cfg_sqlSpec=@('[0-9_][0-9_][0-9_]_*-*.sql','[0-9_][0-9_][a-z]_*-*.sql');verbose=$false;whatif=$true;sdlc='%sdlc%'}" " %~1
 @rem call psake "%buildfile%" -properties "@{cfg_sqlSpec=@('[0-9_][0-9_][0-9_]_*-*.sql');verbose=$false;sdlc='%sdlc%';whatif=$true;}" %1
 @rem call psake "%buildfile%" -properties "@{cfg_sqlSpec=@('[0-9_][0-9_][0-9_]_*-*.sql');verbose=$true;sdlc='%sdlc%';whatif=$false;}" %1
-call psake "%buildfile%" -properties "@{verbose=$false;sdlc='%sdlc%'}" %1
+@rem call psake "%buildfile%" -properties "@{verbose=$false;sdlc='%sdlc%'}" %1
+call psake "%buildfile%" -properties "@{verbose=$false;sdlc='%sdlc%';whatif=$true;}" %1
 
 @echo.MSG99^>%~nx0:ERRORLEVEL=%ERRORLEVEL%
 @echo on

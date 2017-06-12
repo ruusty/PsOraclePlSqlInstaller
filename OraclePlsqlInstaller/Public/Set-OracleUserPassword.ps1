@@ -5,6 +5,8 @@
   .DESCRIPTION
     Gets the Oracle schema passwords from the credential file, 
     If the credential file doesn't exist, prompt for the password and create it
+
+    The credential file can live in current working directory or parent of working directory
    
   .EXAMPLE
     PS C:\> Set-OracleSchemaPassword -sqlPlusCommand $value1
@@ -47,14 +49,18 @@ function Set-OracleUserPassword
     {
       Write-Verbose "Creating $sqlPlusCommand.credentialFileName"
       #create the credential file as it doesn't exist, get the name from the file
-      $name = [System.IO.Path]::GetFileNameWithoutExtension($sqlPlusCommand.credentialFileName)
-      if ($name -match '^([A-Za-z_]+)@([A-Za-z0-9_\.]+$)')
+      $credFname = [System.IO.Path]::GetFileNameWithoutExtension($sqlPlusCommand.credentialFileName)
+      if ($credFname -match '^([A-Za-z_]+)@([A-Za-z0-9_\.]+$)')
       {
         $user = $matches[1]
         $connect_identifier = $matches[2]
       }
+      else
+      {
+        throw "Invalid Credential file name"
+      }
       #Prompt for the credentials and save
-      [pscredential]$Credential = $(Get-Credential -UserName $user -Message "Enter Oracle $user Password for $connect_identifier")
+      [pscredential]$Credential = $(Get-Credential -UserName $sqlPlusCommand.OraUser -Message "Enter Oracle ${sqlPlusCommand.OraUser} Password for ${sqlPlusCommand.tnsName}")
       if (!$Credential) { throw "Null credentials entered" }
       $Credential | Export-CliXml $sqlPlusCommand.credentialFileName
     }
