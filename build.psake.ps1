@@ -48,7 +48,7 @@ properties {
   $now = [System.DateTime]::Now
   write-verbose($("CurrentLocation={0}" -f $executionContext.SessionState.Path.CurrentLocation))
   $GlobalPropertiesName=$("GisOms.Chocolatey.properties.{0}.xml" -f $env:COMPUTERNAME)
-  $GlobalPropertiesPath = Ruusty.PSReleaseUtilities\Find-FileUp "GisOms.Chocolatey.properties.pca16128.xml" -verbose
+  $GlobalPropertiesPath = Ruusty.PSReleaseUtilities\Find-FileUp "GisOms.Chocolatey.properties.${env:COMPUTERNAME}.xml" -verbose
   Write-Host $('$GlobalPropertiesPath:{0}' -f $GlobalPropertiesPath)
   $GlobalPropertiesXML = New-Object XML
   $GlobalPropertiesXML.Load($GlobalPropertiesPath)
@@ -117,7 +117,7 @@ task compile -description "Build Deliverable zip file" -depends clean, git-histo
   Write-Host "Attempting Versioning"
   Ruusty.PSReleaseUtilities\set-VersionReadme "$ProjBuildPath/README.md"  $version  $now
   
-  #Version any Packages
+  <#Version any Packages
   $pkgPath = Join-Path $ProjBuildPath "OMS\sql_packages\OMS.PLANNED_OUTAGE.pkb"
   Ruusty.PSReleaseUtilities\Set-VersionPlSql $pkgPath $version
   
@@ -126,7 +126,7 @@ task compile -description "Build Deliverable zip file" -depends clean, git-histo
   {
     Ruusty.PSReleaseUtilities\Set-Token $plsqlVersionPath 'ProductVersion' $versionNum
   }
-  
+  #>
  
   Write-Host "Attempting convert markdown to html"
   import-module -verbose:$verbose md2html; convertto-mdhtml -verbose:$verbose  -recurse
