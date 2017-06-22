@@ -1,54 +1,43 @@
 <#
 .SYNOPSIS
 
-This is a psake script
-
-Executes Pl/Sql files with sqlplus.exe
+psake script for executing Pl/Sql files with sqlplus.exe
 
 .DESCRIPTION
 
-Executes sqlplus.exe over a collection of pl/sql files into the target SDLC Environment
-
-Manage the encryption a decryption of Oracle SDLC passwords
+Executes sqlplus.exe over a collection of pl/sql files into the target SDLC Environment using Module OraclePlsqlInstaller
 
 .EXAMPLE
+@psake sqlplus.psake.ps1 -docs
 
 Discover the available targets
 
-@psake -docs
-
-
 .EXAMPLE
-
-psake sqlplus.psake.ps1 -properties "@{verbose=$true;sdlc='DEV';whatif=$false;}" 
-
+@set buildfile=sqlplus.psake.ps1
+call psake "%buildfile%" -properties "@{cfg_sqlSpec=@('[0-9_][0-9_][0-9_]_*-*.sql');verbose=$false;whatif=$true;}" -parameters "@{sdlc='%sdlc%'}" %1
 Runs the Pl/sql files in the current directory matching the pattern
 
-("[0-9_][0-9_][0-9_]_*-*.sql","[0-9_][0-9_][a-z]_*-*.sql")
-
-into DEV SDLC Database
-
-Sample filename matching this pattern
-
-  ___entry_criteria-onc.username.sql
-  021a_table_status_data-onc.oproc.sql
-  021c_views-onc.oproc.sql
-  022_table_UnplannedCust-onc.oproc.sql
+.EXAMPLE
+@set buildfile=sqlplus.psake.ps1
+call psake "%buildfile%" -properties "@{cfg_sqlSpec=@('[0-9_][0-9_][0-9_]_*-*.sql');verbose=$true;whatif=$false;}" -parameters "@{sdlc='%sdlc%'}" %1
+Runs the Pl/sql files in the current directory matching the pattern
 
 .EXAMPLE
-
-install dev run
+@set buildfile=sqlplus.psake.ps1
+call psake "%buildfile%" -properties "@{cfg_sqlSpec=@('[0-9_][0-9_][0-8_]_*-*.sql');verbose=$false}" -parameters "@{sdlc='%sdlc%'}" %1
+Runs the Pl/sql files in the current directory matching the pattern
 
 .EXAMPLE
-  psake sqlplus.psake.ps1 -properties "@{verbose=$false}" accept
-  psake sqlplus.psake.ps1 -properties "@{verbose=$false}" accept
-  psake sqlplus.psake.ps1 -properties "@{verbose=$true;sdlc='DEV';whatif=$false;}" Show-Settings,Show-Passwords
-  psake sqlplus.psake.ps1 -properties "@{verbose=$true;sdlc='DEV';whatif=$false;}" Show-SqlCommands
-
+@set buildfile=sqlplus.psake.ps1
+call psake "%buildfile%" -properties "@{cfg_sqlSpec=@('[0-9_][0-9_][0-8_]_*-*.sql');verbose=$false}" -parameters "@{sdlc='%sdlc%'}" ?
+Runs the Pl/sql files in the current directory matching the pattern
 
 .NOTES
 
-Requires psake
+Requires Modules
+
+  psake
+  OraclePlsqlInstaller
 
 https://github.com/psake/psake
 
@@ -58,15 +47,8 @@ Framework '4.0'
 Set-StrictMode -Version 4 
 $me = $MyInvocation.MyCommand.Definition
 filter Skip-Empty { $_ | ?{ $_ -ne $null -and $_ } }
-if (Test-Path "$PSScriptRoot/OraclePlsqlInstaller/OraclePlsqlInstaller.psm1")
-{
-  Import-Module "$PSScriptRoot/OraclePlsqlInstaller/OraclePlsqlInstaller.psm1"
-}
-else
-{
-  Import-Module OraclePlsqlInstaller
-}
 
+Import-Module OraclePlsqlInstaller
 
 FormatTaskName "`r`n[------{0}------]`r`n"
 
@@ -77,6 +59,7 @@ task default -depends install
 Task install -depends Clean, Init, Start-Logging, Show-Settings, Test-Connect, Accept, Invoke-sqlplus, Stop-Logging, Archive, Result  -description "Install pl/sql files into database using sqlplus.exe"
 
 properties {
+  # sdlc must be set via -parameters
   $script:config_vars = @()
   # Add variable names to $config_vars to display their values
   $script:config_vars += @(
@@ -103,7 +86,7 @@ properties {
   write-host($VerbosePreference)
   Set-Variable -Name "JobName" -Description "Literal Path of the directory containing the psake file and associated sql files." -value $(Split-Path -Path $executionContext.SessionState.Path.CurrentLocation -Leaf)
   Set-Variable -Name "JobDir" -Description "Literal Path of the directory containing the psake file and associated sql files." -value $($executionContext.SessionState.Path.CurrentLocation)
-  Set-Variable -Name "sdlc" -Description "System Development Lifecycle Environment" -Value "UNKNOWN"
+
   Set-Variable -Name "IsoDateTimeStr" -Description "Time and Date Stamp string" -Value $now.ToString("yyyy-MM-ddTHH-mm-ss")
   Set-Variable -Name "cfg_sqlSpec" -Description "Sql file wild cards spec" -value @('[0-9_][0-9_][0-9_]_*-*.sql', '[0-9_][0-9_][a-z]_*-*.sql')
   Set-Variable -Name "PoshLogPathAbs" -Description "Powershell logging file used by Start-Transcript" -value $(join-path -Path $JobDir -ChildPath $($JobName + "." + $sdlc + "." + $IsoDateTimeStr + ".log"))
@@ -146,12 +129,12 @@ task Show-SqlCommands -description "Display the command" -depends init {
 
 task Init -Description "Initialize the environment based on the properties" {
   Write-Verbose("Verbose is on")
+  if (!($sdlc)) { throw "Variable SDLC not Set" }
+  
   # VerbosePreference doesn't work under psake, must explicity define on the command line
-
   $(get-module OraclePlsqlInstaller).ExportedCommands.Keys | Out-String | write-verbose
   $initArgs = @{
-    #directory       = $PSScriptRoot
-    directory       = Join-Path $PSScriptRoot "OraclePlsqlInstaller\Specification"; #TODO Used for testing and development
+    directory = $PSScriptRoot 
     sqlSpec = $cfg_sqlSpec;
     logFileSuffix = $IsoDateTimeStr;
     netServiceNames = Set-SdlcConnections $sdlc.ToUpper();
@@ -164,6 +147,7 @@ task Init -Description "Initialize the environment based on the properties" {
 
 
 task Test-Connect -depends Init -description "Test username and password connections"{
+  $verbose = $true;
   $script:sqlCommands | Test-OracleConnections -sqlplusExe "sqlplus.exe" -verbose:$verbose -whatif:$whatif
 }
 

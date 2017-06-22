@@ -1,11 +1,11 @@
 @echo off
 @rem ============================================================================
-@rem        Date : 2017-05-14
+@rem        Date : 2017-06-22
 @rem
 @rem    Function : Pl/Sql installer
 @rem
 @rem  Example:
-@rem   Install SDLC
+@rem   Install into SDLC
 @rem
 @rem ===========================================================================
 setlocal ENABLEDELAYEDEXPANSION
@@ -47,11 +47,9 @@ whoami
 @rem     Properties are set after all "properties" blocks have run
 @rem
 @echo on
-@rem call psake "%buildfile%" -properties "@{cfg_sqlSpec=@('[0-9_][0-9_][0-9_]_*-*.sql','[0-9_][0-9_][a-z]_*-*.sql');verbose=$false;whatif=$true;sdlc='%sdlc%'}" " %~1
-@rem call psake "%buildfile%" -properties "@{cfg_sqlSpec=@('[0-9_][0-9_][0-9_]_*-*.sql');verbose=$false;sdlc='%sdlc%';whatif=$true;}" %1
-@rem call psake "%buildfile%" -properties "@{cfg_sqlSpec=@('[0-9_][0-9_][0-9_]_*-*.sql');verbose=$true;sdlc='%sdlc%';whatif=$false;}" %1
-@rem call psake "%buildfile%" -properties "@{verbose=$false;sdlc='%sdlc%'}" %1
-call psake "%buildfile%" -properties "@{verbose=$false;sdlc='%sdlc%';whatif=$true;}" %1
+@rem call psake "%buildfile%" -properties "@{cfg_sqlSpec=@('[0-9_][0-9_][0-9_]_*-*.sql');verbose=$false;whatif=$true;}" -parameters "@{sdlc='%sdlc%'}" %1
+@rem call psake "%buildfile%" -properties "@{cfg_sqlSpec=@('[0-9_][0-9_][0-9_]_*-*.sql');verbose=$true;whatif=$false;}" -parameters "@{sdlc='%sdlc%'}" %1
+call psake "%buildfile%" -properties "@{cfg_sqlSpec=@('[0-9_][0-9_][0-8_]_*-*.sql');verbose=$false}" -parameters "@{sdlc='%sdlc%'}" %1
 
 @echo.MSG99^>%~nx0:ERRORLEVEL=%ERRORLEVEL%
 @echo on
