@@ -2,10 +2,8 @@
 @rem ============================================================================
 @rem        Date : 2017-06-22
 @rem
-@rem    Function : Pl/Sql installer
-@rem
-@rem  Example:
-@rem   Install into SDLC
+@rem  Function :
+@rem    Install pl/sql into an Oracle Database 
 @rem
 @rem ===========================================================================
 setlocal ENABLEDELAYEDEXPANSION

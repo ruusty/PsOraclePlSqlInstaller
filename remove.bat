@@ -2,9 +2,7 @@
 @rem ============================================================================
 @rem        Date : 2017-06-22
 @rem
-@rem    Function : Pl/Sql installer
-@rem
-@rem  Example:
+@rem Function : 
 @rem   Execute the Removal of old orders (after install)
 @rem
 @rem ===========================================================================
