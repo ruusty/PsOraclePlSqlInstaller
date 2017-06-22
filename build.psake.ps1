@@ -1,17 +1,12 @@
 <#
 .SYNOPSIS
 
-This is a psake script
+psake script to build a deliverable versioned zip file of Pl/Sql scripts.
 
-Builds a deliverable versioned zip file
-
-.DESCRIPTION
-
+.NOTES
 The Project Name is the current directory name
 
  $ProjectName = [System.IO.Path]::GetFileName($PSScriptRoot)
-
-
 #>
 Framework '4.0'
 Set-StrictMode -Version 4
@@ -104,8 +99,8 @@ task compile -description "Build Deliverable zip file" -depends clean, git-histo
   $versionNum = Get-Content $ProjVersionPath
   $version = [system.Version]::Parse($versionNum)
   $copyArgs = @{
-    path = @("*.sql","OMS","$ProjTopdir\README.md", $ProjHistoryPath, $ProjVersionPath , "$ProjTopdir/install.bat", "$ProjTopdir/sqlplus.psake.ps1" ) # TODO
-    exclude = @("*.log", "*.html", "*.credential", "*.TempPoint.psd1", "*.TempPoint.ps1", "*.Tests.ps1")
+    path = @("*.sql","OMS","$ProjTopdir\README.md", $ProjHistoryPath, $ProjVersionPath , "$ProjTopdir/*.bat", "$ProjTopdir/sqlplus.psake.ps1" ) # TODO
+    exclude = @("*.log", "*.html", "*.credential", "*.TempPoint.psd1", "*.TempPoint.ps1", "*.Tests.ps1", "run.sql")
     destination = $ProjBuildPath
     recurse = $true
   }
@@ -140,6 +135,7 @@ task compile -description "Build Deliverable zip file" -depends clean, git-histo
   
 }
 
+
 task distribute -description "Copy deliverables to the Public Delivery Location" {
   $versionNum = Get-Content $ProjVersionPath
   $DeliveryCopyArgs = @{
@@ -161,11 +157,13 @@ task clean -description "Remove all generated files" -depends clean-dirs{
 
 }
 
+
 task set-version -description "Create the file containing the version" {
   $version = Ruusty.PSReleaseUtilities\Get-Version 4 3
   Set-Content $ProjVersionPath $version.ToString()
   Write-Host $("Version:{0}" -f $(Get-Content $ProjVersionPath))
 }
+
 
 task tag-version -description "Create a tag with the version number" {
   $versionNum = Get-Content $ProjVersionPath
@@ -173,10 +171,12 @@ task tag-version -description "Create a tag with the version number" {
   
 }
 
+
 task Display-version -description "Display the current version" {
   $versionNum = Get-Content $ProjVersionPath
   Write-Host $("Version:{0}" -f $versionNum)
 }
+
 
 task git-revision -description "" {
   exec { & $GitExe "describe" --tag }
@@ -185,6 +185,7 @@ task git-revision -description "" {
 task git-history -description "Create git history file" {
   exec { & $GitExe "log"  --since="$ProjHistorySinceDate" --pretty=format:"%h - %an, %ai : %s" } | Set-Content $ProjHistoryPath
 }
+
 
 task git-status -description "Stop the build if there are any uncommitted changes" {
   $rv = exec { & $GitExe status --short  --porcelain }
@@ -199,6 +200,7 @@ task git-status -description "Stop the build if there are any uncommitted change
   }
 }
 
+
 task show-deliverable {
   $versionNum = Get-Content $ProjVersionPath
   $Dest = $ExecutionContext.InvokeCommand.ExpandString($ProjDeliveryPath)
@@ -206,6 +208,7 @@ task show-deliverable {
   & cmd.exe /c explorer.exe $Dest
   dir $Dest
 }
+
 
 task Show-Settings -description "Display the psake configuration properties variables"   {
   Write-Verbose("Verbose is on")
@@ -216,11 +219,18 @@ task Show-Settings -description "Display the psake configuration properties vari
 
 task set-buildList -description "Generate the list of files to go in the zip deliverable"  {
   Push-Location $ProjTopdir
+  $gbArgs =@{
+    ProjectName=$ProjectName
+    sqlSpec=@("[XYZ][0-9_][0-9_]_*-*.sql", "[0-9_][0-9_][0-9_]_*-*.sql", "[0-9_][0-9_][a-z]_*-*.sql")
+    logsuffix =@(".Build.Number", ".git_history.txt")
+    prolog = @('README.md', 'README.html', 'install.bat', 'sqlplus.psake.ps1', 'archive.bat','remove.bat')
+  }
   #get the paths referenced by the Top level sql file
-  $FileInZip = Get-BuildList -ProjectName $ProjectName -sqlSpec @("[0-9_][0-9_][0-9_]_*-*.sql", "[0-9_][0-9_][a-z]_*-*.sql") -logsuffix @(".Build.Number", ".git_history.txt") -verbose:$verbose
+  $FileInZip = Get-BuildList @gbArgs -verbose:$verbose
   Pop-Location
   $FileInZip | sort -Unique | Set-Content $ProjPackageListPath
 }
+
 
 task ? -Description "Helper to display task info" -depends help {
 }
