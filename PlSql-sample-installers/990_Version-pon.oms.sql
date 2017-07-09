@@ -1,3 +1,4 @@
+
 show user
 
 whenever sqlerror exit failure rollback
@@ -5,11 +6,11 @@ whenever sqlerror exit failure rollback
 variable versionnum NUMBER
 variable desc_str VARCHAR2(80)
 
--->Get Patch number from G:\MKT\DEPT\IT Spatial\OMS GIS\Support 'How To' Instruction\CHED OMS\00_Version_Description\Configuration\!OMS Patch Index.xls
-execute SELECT 7598 INTO :versionnum FROM dual;
+-->Get Patch number from G:\MKT\DEPT\IT Spatial\OMS GIS\Change Requests 2017\OMS-Oracle_Patch_Index.xls
+execute SELECT 0000 INTO :versionnum FROM dual;
 ---------------^
 
-execute SELECT 'CR33194-PON for connected cust with valid SP. @ProductVersion@' INTO :desc_str FROM dual;
+execute SELECT substr('PR-000000-Description. @ProductVersion@',1,80) INTO :desc_str FROM dual;
 
 print versionnum
 print desc_str
