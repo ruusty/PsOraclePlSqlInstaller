@@ -74,7 +74,7 @@ properties {
   $zipArgs = 'a -bb2 -tzip "{0}" -ir0!*' -f $ProjPackageZipPath #Everything in $ProjBuildPath
 
   $zipArgs = 'a  -tzip "{0}" -ir0@"{1}"' -f $ProjPackageZipPath, $ProjPackageListPath # Get paths from file #7z.exe 9.38
-  $zipArgs = 'a  -tzip "{0}" -ir0!*' -f $ProjPackageZipPath #Everything in $ProjBuildPath #7z.exe 9.38
+  #$zipArgs = 'a  -tzip "{0}" -ir0!*' -f $ProjPackageZipPath #Everything in $ProjBuildPath #7z.exe 9.38
 
   Write-Host "Verbose: $verbose"
   Write-Verbose "Verbose"
@@ -99,7 +99,7 @@ task compile -description "Build Deliverable zip file" -depends clean, git-histo
   $versionNum = Get-Content $ProjVersionPath
   $version = [system.Version]::Parse($versionNum)
   $copyArgs = @{
-    path = @("*.sql","OMS","$ProjTopdir\README.md", $ProjHistoryPath, $ProjVersionPath , "$ProjTopdir/*.bat", "$ProjTopdir/sqlplus.psake.ps1" ) # TODO
+    path = @("*.sql", "sql","OMS","$ProjTopdir\README.md", $ProjHistoryPath, $ProjVersionPath , "$ProjTopdir/*.bat", "$ProjTopdir/sqlplus.psake.ps1", $ProjPackageListPath) # TODO
     exclude = @("*.log", "*.html", "*.credential", "*.TempPoint.psd1", "*.TempPoint.ps1", "*.Tests.ps1", "run.sql")
     destination = $ProjBuildPath
     recurse = $true

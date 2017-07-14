@@ -28,7 +28,7 @@
   switch -case ($sdlc)
   {
     DEV  {
-      $netServiceNames = @{ pon = "POND.world"; onc = "ONCD.world" }; break
+      $netServiceNames = @{ pon = "POND.world"; onc = "ONCD.world"; sweg = "SWEG43D.world" }; break
     }
     TEST {
       $netServiceNames = @{ pon = "PONT.world"; onc = "ONCT.world" }; break
