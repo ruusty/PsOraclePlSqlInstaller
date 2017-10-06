@@ -42,7 +42,7 @@
 
 
     <target name="help" description="Help descriptions">
-        <echo message="Compiles ${proj.build.name} to a package with versioning"/>
+        <echo message="Compiles ${proj.topdir} to a package with versioning"/>
         <echo message='nant -buildfile:"${project::get-buildfile-path()}" -projecthelp'/>
         <exec program="nant" workingdir="${proj.topdir}">
             <arg line='-buildfile:"${project::get-buildfile-path()}" -projecthelp'/>

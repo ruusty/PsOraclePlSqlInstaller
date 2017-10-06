@@ -13,7 +13,7 @@ Set-StrictMode -Version 4
 $me = $MyInvocation.MyCommand.Definition
 filter Skip-Empty { $_ | ?{ $_ -ne $null -and $_ } }
 
-Import-Module Ruusty.PSReleaseUtilities -verbose
+Import-Module Ruusty.ReleaseUtilities -verbose
 
 FormatTaskName "`r`n[------{0}------]`r`n"
 properties {
@@ -41,16 +41,24 @@ properties {
   $verbose = $false;
   $whatif = $false;
   $now = [System.DateTime]::Now
+  $Branch = & { git symbolic-ref --short HEAD }
+  $isMaster = if ($Branch -eq 'master') {$true} else {$false}
   write-verbose($("CurrentLocation={0}" -f $executionContext.SessionState.Path.CurrentLocation))
   $GlobalPropertiesName=$("GisOms.Chocolatey.properties.{0}.xml" -f $env:COMPUTERNAME)
-  $GlobalPropertiesPath = Ruusty.PSReleaseUtilities\Find-FileUp "GisOms.Chocolatey.properties.${env:COMPUTERNAME}.xml" -verbose
+  $GlobalPropertiesPath = Ruusty.ReleaseUtilities\Find-FileUp "GisOms.Chocolatey.properties.${env:COMPUTERNAME}.xml" -verbose
   Write-Host $('$GlobalPropertiesPath:{0}' -f $GlobalPropertiesPath)
   $GlobalPropertiesXML = New-Object XML
   $GlobalPropertiesXML.Load($GlobalPropertiesPath)
+
   $GitExe = $GlobalPropertiesXML.SelectNodes("/project/property[@name='git.exe']").value
   $7zipExe = $GlobalPropertiesXML.SelectNodes("/project/property[@name='tools.7zip']").value
+  $ChocoExe = $GlobalPropertiesXML.SelectNodes("/project/property[@name='tools.choco']").value
+  $ProjMajorMinor = $GlobalPropertiesXML.SelectNodes("/project/property[@name='GisOms.release.MajorMinor']").value
+
   $CoreDeliveryDirectory = $GlobalPropertiesXML.SelectNodes("/project/property[@name='core.delivery.dir']").value
-  #$CoreDeliveryDirectory = Join-Path $CoreDeliveryDirectory "GisOms"#todo Change to suite needs
+  #$CoreDeliveryDirectory = Join-Path $CoreDeliveryDirectory "GisOms"   #todo Change to suite needs
+  $CoreChocoFeed = $GlobalPropertiesXML.SelectNodes("/project/property[@name='core.delivery.chocoFeed.dir']").value
+
   $CoreReleaseStartDate = $GlobalPropertiesXML.SelectNodes("/project/property[@name='GisOms.release.StartDate']").value
   $ProjectName = [System.IO.Path]::GetFileName($PSScriptRoot)
   $ProjTopdir = $PSScriptRoot
@@ -58,32 +66,40 @@ properties {
   $ProjDistPath = Join-Path $ProjTopdir "Dist"
   $ProjPackageListPath = Join-Path $ProjTopdir "${ProjectName}.lis"
   $ProjPackageZipPath = Join-Path $ProjDistPath  "${ProjectName}.zip"
+  $ProjDeliveryPath= Join-Path $CoreDeliveryDirectory "GisOms"
   #$ProjDeliveryPath = Join-Path $(Join-Path $CoreDeliveryDirectory ${ProjectName})  '${versionNum}'
   $ProjDeliveryPath = Join-Path $PSScriptRoot "..\Deploy"
-  
+
   $ProjPackageZipVersionPath = Join-Path $ProjDeliveryPath  '${ProjectName}.${versionNum}.zip'  #Expand dynamically versionNum not set
 
 
-  $ProjHistoryPath = Join-Path $ProjTopdir  "${ProjectName}.git_history.txt"
+  $ProjHistoryPath = Join-Path $ProjTopdir "${ProjectName}.git_history.txt"
   $ProjVersionPath = Join-Path $ProjTopdir   "${ProjectName}.Build.Number"
-  $ProjHistorySinceDate ="2015-05-01" 
-  
+  $ProjNuspecName = "ched-${ProjectName}"
+  $ProjNuspecPath = Join-Path $ProjTopdir "${ProjNuspecName}.nuspec"
+  $ProjNuspecPkgVersionPath = Join-Path $ProjTopdir  '${ProjNuspecName}.${versionNum}.nupkg'
+
+  $ProjHistorySinceDate ="2015-05-01"
+
   Set-Variable -Name "sdlc" -Description "System Development Lifecycle Environment" -Value "UNKNOWN"
   $zipExe = "7z.exe"
-  $zipArgs = 'a -bb2 -tzip "{0}" -ir0@"{1}"' -f $ProjPackageZipPath, $ProjPackageListPath # Get paths from file
-  $zipArgs = 'a -bb2 -tzip "{0}" -ir0!*' -f $ProjPackageZipPath #Everything in $ProjBuildPath
+  #$zipArgs = 'a -bb2 -tzip "{0}" -ir0@"{1}"' -f $ProjPackageZipPath, $ProjPackageListPath # Get paths from file
+  #$zipArgs = 'a -bb2 -tzip "{0}" -ir0!*' -f $ProjPackageZipPath #Everything in $ProjBuildPath
 
   $zipArgs = 'a  -tzip "{0}" -ir0@"{1}"' -f $ProjPackageZipPath, $ProjPackageListPath # Get paths from file #7z.exe 9.38
   #$zipArgs = 'a  -tzip "{0}" -ir0!*' -f $ProjPackageZipPath #Everything in $ProjBuildPath #7z.exe 9.38
 
   Write-Host "Verbose: $verbose"
   Write-Verbose "Verbose"
-  
+
 }
 
 task default -depends build
-task test-build -depends Show-Settings, clean, git-history, set-version, compile, distribute
-task build -depends Show-Settings,git-status,clean, git-history, set-version, compile, tag-version, distribute
+<#task test-build -depends Show-Settings, Test, clean, create-dirs, git-history, set-version, compile, compile-nupkg #>
+<#task      build -depends Show-Settings, Test, clean, git-status, create-dirs, git-history, set-version, compile, compile-nupkg, tag-version, distribute, distribute-nupkg #>
+
+task test-build -depends Show-Settings, Test, clean,             create-dirs, git-history, set-version, compile
+task      build -depends Show-Settings, Test, clean, git-status, create-dirs, git-history, set-version, compile, tag-version, distribute
 
 task clean-dirs {
   if ((Test-Path $ProjBuildPath)) { Remove-Item $ProjBuildPath -Recurse -force }
@@ -95,48 +111,74 @@ task create-dirs {
   if (!(Test-Path $ProjDistPath))  { mkdir -Path $ProjDistPath }
 }
 
-task compile -description "Build Deliverable zip file" -depends clean, git-history, create-dirs {
+
+task Test -description "Pester tests"{
+<#
+ $result = invoke-pester -Script @{ Path = '.\src\SpaOmsGis.Tests.ps1' } -OutputFile ".\src\SpaOmsGis.Tests.TestResults.xml" -PassThru
+  Write-Host $result.FailedCount
+  if ($result.FailedCount -gt 0)
+  {
+    Write-Error -Message $("Pester failed {0} tests" -f $result.FailedCount)
+  }
+#>
+}
+
+task compile -description "Build Deliverable zip file" -depends clean, create-dirs  {
   $versionNum = Get-Content $ProjVersionPath
   $version = [system.Version]::Parse($versionNum)
   $copyArgs = @{
-    path = @("*.sql", "sql","OMS","$ProjTopdir\README.md", $ProjHistoryPath, $ProjVersionPath , "$ProjTopdir/*.bat", "$ProjTopdir/sqlplus.psake.ps1", $ProjPackageListPath) # TODO
-    exclude = @("*.log", "*.html", "*.credential", "*.TempPoint.psd1", "*.TempPoint.ps1", "*.Tests.ps1", "run.sql")
+    path = @("*.sql", "OPROC","$ProjTopdir\README.md", $ProjHistoryPath, $ProjVersionPath , "$ProjTopdir/*.bat", "$ProjTopdir/sqlplus.psake.ps1", $ProjPackageListPath) # TODO
+    exclude = @("*.log", "*.html", "*.credential", "*.TempPoint.psd1", "*.TempPoint.ps1", "*.Tests.ps1", "run.sql","*.rar",".gitignore")
     destination = $ProjBuildPath
     recurse = $true
   }
+  #mkdir -Path $copyArgs.destination
+
   Write-Host "Attempting to get Pl/Sql deliverables"
-  Copy-Item @copyArgs -verbose:$verbose
-  
-  
+  #Push-Location src
+  Copy-Item @copyArgs -verbose:$verbose -ErrorAction Stop
+
+
   Push-Location $ProjBuildPath;
   Write-Host "Attempting Versioning"
-  Ruusty.PSReleaseUtilities\set-VersionReadme "$ProjBuildPath/README.md"  $version  $now
-  
+  Ruusty.ReleaseUtilities\set-VersionReadme "$ProjBuildPath/README.md"  $version  $now
+
   <#Version any Packages
   $pkgPath = Join-Path $ProjBuildPath "OMS\sql_packages\OMS.PLANNED_OUTAGE.pkb"
-  Ruusty.PSReleaseUtilities\Set-VersionPlSql $pkgPath $version
-  
+  Ruusty.ReleaseUtilities\Set-VersionPlSql $pkgPath $version
+  #>
   $plsqlVersionPath = Join-Path $ProjBuildPath "990_Version-pon.oms.sql"
   if (Test-Path $plsqlVersionPath )
   {
-    Ruusty.PSReleaseUtilities\Set-Token $plsqlVersionPath 'ProductVersion' $versionNum
+    Ruusty.ReleaseUtilities\Set-Token $plsqlVersionPath 'ProductVersion' $versionNum
   }
-  #>
- 
+
+
   Write-Host "Attempting convert markdown to html"
   import-module -verbose:$verbose md2html; convertto-mdhtml -verbose:$verbose  -recurse
-  
+
   Write-Host "Attempting to create zip file with '$zipArgs'"
-  
+
   start-exe $zipExe -ArgumentList $zipArgs -workingdirectory $ProjBuildPath
   Pop-Location;
-  
+
   Copy-Item "$ProjBuildPath/README.*" $ProjDistPath
-  
 }
 
+task compile-nupkg -description "Compile Chocolatey nupkg from nuspec" {
+  $versionNum = Get-Content $ProjVersionPath
+  Write-Host $("Compiling {0}" -f $ProjNuspecPath)
+  exec { & $ChocoExe pack $ProjNuspecPath --version $versionNum }
+}
 
-task distribute -description "Copy deliverables to the Public Delivery Location" {
+task distribute-nupkg -description "Push nupkg to Chocolatey Feed" -PreCondition { $isMaster } {
+  $versionNum = Get-Content $ProjVersionPath
+  $nupkg = $ExecutionContext.InvokeCommand.ExpandString($ProjNuspecPkgVersionPath)
+  Write-Host $("Pushing {0}" -f $nupkg)
+  exec { & $ChocoExe  push $nupkg -s $CoreChocoFeed }
+}
+
+task distribute -description "Copy deliverables to the Public Delivery Location" -PreCondition { $isMaster } {
   $versionNum = Get-Content $ProjVersionPath
   $DeliveryCopyArgs = @{
     path = @("$ProjDistPath/*")
@@ -154,29 +196,30 @@ task distribute -description "Copy deliverables to the Public Delivery Location"
 
 
 task clean -description "Remove all generated files" -depends clean-dirs{
-
+  exec { & $GitExe "clean" -X -f --dry-run}
 }
 
-
 task set-version -description "Create the file containing the version" {
-  $version = Ruusty.PSReleaseUtilities\Get-Version 4 3
+  $version = Ruusty.ReleaseUtilities\Get-Version -Major $ProjMajorMinor.Split(".")[0] -minor $ProjMajorMinor.Split(".")[1]
   Set-Content $ProjVersionPath $version.ToString()
   Write-Host $("Version:{0}" -f $(Get-Content $ProjVersionPath))
 }
 
-
-task tag-version -description "Create a tag with the version number" {
+task set-versionAssembly -description "version the AssemblyInfo.cs" {
   $versionNum = Get-Content $ProjVersionPath
-  exec { & $GitExe "tag" "V$versionNum" }
-  
+  $version = [system.Version]::Parse($versionNum)
+  Ruusty.ReleaseUtilities\Set-VersionAssembly "CmdletRuusty\Properties\AssemblyInfo.cs" $version
 }
 
+task tag-version -description "Create a tag with the version number" -PreCondition { $isMaster } {
+  $versionNum = Get-Content $ProjVersionPath
+  exec { & $GitExe "tag" "V$versionNum" }
+}
 
 task Display-version -description "Display the current version" {
   $versionNum = Get-Content $ProjVersionPath
   Write-Host $("Version:{0}" -f $versionNum)
 }
-
 
 task git-revision -description "" {
   exec { & $GitExe "describe" --tag }
@@ -186,20 +229,18 @@ task git-history -description "Create git history file" {
   exec { & $GitExe "log"  --since="$ProjHistorySinceDate" --pretty=format:"%h - %an, %ai : %s" } | Set-Content $ProjHistoryPath
 }
 
-
-task git-status -description "Stop the build if there are any uncommitted changes" {
+task git-status -description "Stop the build if there are any uncommitted changes" -PreCondition { $isMaster }  {
   $rv = exec { & $GitExe status --short  --porcelain }
   $rv | write-host
-  
+
   #Extras
   #exec { & git.exe ls-files --others --exclude-standard }
-  
+
   if ($rv)
   {
     throw $("Found {0} uncommitted changes" -f ([array]$rv).Count)
   }
 }
-
 
 task show-deliverable {
   $versionNum = Get-Content $ProjVersionPath
@@ -208,7 +249,6 @@ task show-deliverable {
   & cmd.exe /c explorer.exe $Dest
   dir $Dest
 }
-
 
 task Show-Settings -description "Display the psake configuration properties variables"   {
   Write-Verbose("Verbose is on")
@@ -223,14 +263,13 @@ task set-buildList -description "Generate the list of files to go in the zip del
     ProjectName=$ProjectName
     sqlSpec=@("[XYZ][0-9_][0-9_]_*-*.sql", "[0-9_][0-9_][0-9_]_*-*.sql", "[0-9_][0-9_][a-z]_*-*.sql")
     logsuffix =@(".Build.Number", ".git_history.txt")
-    prolog = @('README.md', 'README.html', 'install.bat', 'sqlplus.psake.ps1', 'archive.bat','remove.bat')
+    prolog = @('README.md', 'README.html', 'install.bat', 'sqlplus.psake.ps1')
   }
   #get the paths referenced by the Top level sql file
   $FileInZip = Get-BuildList @gbArgs -verbose:$verbose
   Pop-Location
   $FileInZip | sort -Unique | Set-Content $ProjPackageListPath
 }
-
 
 task ? -Description "Helper to display task info" -depends help {
 }
