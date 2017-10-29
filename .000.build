@@ -23,14 +23,14 @@
         </exec>
     </target>
 
-        <target name="set-buildList" description="Create a list of file that should be in the zip file">
+<!--    <target name="set-buildList" description="Create a list of file that should be in the zip file">
         <exec program="cmd.exe" verbose="true" workingdir="${proj.topdir}" failonerror="true">
             <arg line="/C"/>
             <arg line="psake"/>
             <arg line="build.psake.ps1"/>
             <arg line="set-buildList"/>
         </exec>
-    </target>
+    </target> -->
 
     <target name="test-build" description="Test the Build">
         <exec program="cmd.exe" verbose="true" workingdir="${proj.topdir}" failonerror="true">
@@ -41,26 +41,14 @@
         </exec>
     </target>
 
-    <target name="?" description="Test the Build">
+    <target name="?" description="Help">
         <exec program="cmd.exe" verbose="true" workingdir="${proj.topdir}" failonerror="true">
             <arg line="/C"/>
             <arg line="psake"/>
-            <arg line=".chocolatey.build.psake.ps1"/>
+            <arg line="build.psake.ps1"/>
             <arg line="?"/>
         </exec>
     </target>
-
-
-
-
-    <target name="help" description="Help descriptions">
-        <echo message="Compiles ${proj.build.name} to a package with versioning"/>
-        <echo message='nant -buildfile:"${project::get-buildfile-path()}" -projecthelp'/>
-        <exec program="nant" workingdir="${proj.topdir}">
-            <arg line='-buildfile:"${project::get-buildfile-path()}" -projecthelp'/>
-        </exec>
-    </target>
-
 
     <target name="fail">
         <echo message="Notifying you of a failure in the build process."/>

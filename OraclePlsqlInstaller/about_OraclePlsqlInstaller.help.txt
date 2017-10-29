@@ -1,0 +1,32 @@
+TOPIC
+    about_OraclePlsqlInstaller
+    
+SHORT DESCRIPTION
+    Cmdlets used to .....
+           
+LONG DESCRIPTION
+    Cmdlets used to .....
+                 
+    The following cmdlets are included.
+
+        ConvertTo-SqlPlusCommands
+        Get-OracleSecret
+
+
+    Get all the cmdlets in  OraclePlsqlInstaller
+    get-module "OraclePlsqlInstaller" | select -expand ExportedCommands
+
+    Get the help
+
+    $(get-module OraclePlsqlInstaller).ExportedCommands.Keys |% {get-help $_}
+
+
+
+    SEE ALSO
+    Online help and updates: 
+            http://example.com
+    GitHub repository      : 
+            https://github.com/
+
+    BitBucket repository      : 
+            https://github.com/
