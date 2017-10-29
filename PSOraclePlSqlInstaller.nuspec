@@ -1,0 +1,23 @@
+<?xml version="1.0"?>
+<package xmlns="http://schemas.microsoft.com/packaging/2011/08/nuspec.xsd">
+  <metadata>
+    <id>psoracleplsqlinstaller</id>
+    <version>0.0.0</version>
+    <title>PSOraclePlSqlInstaller</title>
+    <authors>Ruusty</authors>
+    <owners>Ruusty</owners>
+    <!--<licenseUrl></licenseUrl>-->
+    <projectUrl>https://bitbucket.org/ruusty/psoracleplsqlinstaller</projectUrl>
+    <requireLicenseAcceptance>false</requireLicenseAcceptance>
+    <summary>PowerShell module to automate installing Oracle Pl/Sql code into an Oracle database</summary>
+    <description>PowerShell module to automate installing Oracle Pl/Sql code into an Oracle database</description>
+    <copyright></copyright>
+    <tags> powershell pl/sql </tags>
+  </metadata>
+  <files>
+    <file target="tools" src="tools\ChocolateyInstall.ps1" />
+    <file target="tools" src="tools\ChocolateyUninstall.ps1" />
+    <file target="tools" src="tools\properties.ps1" />
+    <file target="tools" src="Dist\PSOraclePlSqlInstaller.zip" />
+  </files>
+</package>

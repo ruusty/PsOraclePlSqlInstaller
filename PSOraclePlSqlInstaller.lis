@@ -1,0 +1,7 @@
+OraclePlsqlInstaller\OraclePlsqlInstaller.psd1
+OraclePlsqlInstaller\OraclePlsqlInstaller.psm1
+OraclePlsqlInstaller\Private\*
+OraclePlsqlInstaller\PSOraclePlSqlInstaller.history.txt
+OraclePlsqlInstaller\Public\*
+OraclePlsqlInstaller\README.html
+OraclePlsqlInstaller\README.md

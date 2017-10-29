@@ -1,7 +1,9 @@
 <?xml version="1.0" encoding="utf-8" ?>
 <project name="NantMenu" default="build">
     <description>Build file NantMenu</description>
+
     <property name="proj.topdir" value="${path::get-directory-name(project::get-buildfile-path())}"/>
+    <property name="proj.build.name" value="${path::get-directory-name(project::get-buildfile-path())}"/>
     <target name="build" description="Does the full build and copies the deliverable to Delivery share">
         <exec program="cmd.exe" verbose="true" workingdir="${proj.topdir}" failonerror="true">
             <arg line="/C"/>
@@ -39,10 +41,20 @@
         </exec>
     </target>
 
+    <target name="?" description="Test the Build">
+        <exec program="cmd.exe" verbose="true" workingdir="${proj.topdir}" failonerror="true">
+            <arg line="/C"/>
+            <arg line="psake"/>
+            <arg line=".chocolatey.build.psake.ps1"/>
+            <arg line="?"/>
+        </exec>
+    </target>
+
+
 
 
     <target name="help" description="Help descriptions">
-        <echo message="Compiles ${proj.topdir} to a package with versioning"/>
+        <echo message="Compiles ${proj.build.name} to a package with versioning"/>
         <echo message='nant -buildfile:"${project::get-buildfile-path()}" -projecthelp'/>
         <exec program="nant" workingdir="${proj.topdir}">
             <arg line='-buildfile:"${project::get-buildfile-path()}" -projecthelp'/>
