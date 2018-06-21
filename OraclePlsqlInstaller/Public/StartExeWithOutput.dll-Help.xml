@@ -1,0 +1,185 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<helpItems schema="maml" xmlns="http://msh">
+  <!-- Cmdlet: Start-ExeWithOutput -->
+  <command:command xmlns:maml="http://schemas.microsoft.com/maml/2004/10" xmlns:command="http://schemas.microsoft.com/maml/dev/command/2004/10" xmlns:dev="http://schemas.microsoft.com/maml/dev/2004/10">
+    <command:details>
+      <command:name>Start-ExeWithOutput</command:name>
+      <command:verb>Start</command:verb>
+      <command:noun>ExeWithOutput</command:noun>
+      <maml:description>
+        <maml:para>Runs an executable</maml:para>
+      </maml:description>
+    </command:details>
+    <maml:description>
+      <maml:para>Runs an executable and displays the stdout and stderr to Write-Verbose</maml:para>
+      <maml:para>Can also write stdout and stderr to log files</maml:para>
+    </maml:description>
+    <command:syntax>
+      <!-- Parameter set: __AllParameterSets -->
+      <command:syntaxItem>
+        <maml:name>Start-ExeWithOutput</maml:name>
+        <!-- Parameter: FilePath -->
+        <command:parameter required="true" globbing="false" pipelineInput="false" position="0">
+          <maml:name>FilePath</maml:name>
+          <maml:description>
+            <maml:para>Specifies the optional path and file name of the program that runs in the process. Enter the name of an executable file</maml:para>
+          </maml:description>
+          <command:parameterValue required="true">string</command:parameterValue>
+          <dev:type>
+            <maml:name>System.String</maml:name>
+            <maml:uri />
+          </dev:type>
+        </command:parameter>
+        <!-- Parameter: ArgumentList -->
+        <command:parameter required="false" globbing="false" pipelineInput="false" position="1">
+          <maml:name>ArgumentList</maml:name>
+          <maml:description>
+            <maml:para>Specifies parameters or parameter values to use when this cmdlet starts the process.If parameters or parameter values contain a space, they need surrounded with escaped double quotes</maml:para>
+          </maml:description>
+          <command:parameterValue required="true">string[]</command:parameterValue>
+          <dev:type>
+            <maml:name>System.String[]</maml:name>
+            <maml:uri />
+          </dev:type>
+        </command:parameter>
+        <!-- Parameter: ExitCodeList -->
+        <command:parameter required="false" globbing="false" pipelineInput="false" position="named">
+          <maml:name>ExitCodeList</maml:name>
+          <maml:description>
+            <maml:para>Specifies the valid return codes of the executable</maml:para>
+          </maml:description>
+          <command:parameterValue required="true">int[]</command:parameterValue>
+          <dev:type>
+            <maml:name>System.Int32[]</maml:name>
+            <maml:uri />
+          </dev:type>
+          <dev:defaultValue>System.Int32[]</dev:defaultValue>
+        </command:parameter>
+        <!-- Parameter: LogPathStderr -->
+        <command:parameter required="false" globbing="false" pipelineInput="false" position="named">
+          <maml:name>LogPathStderr</maml:name>
+          <maml:description>
+            <maml:para>Specifies the optional path and file name where the stderr are written.</maml:para>
+          </maml:description>
+          <command:parameterValue required="true">string</command:parameterValue>
+          <dev:type>
+            <maml:name>System.String</maml:name>
+            <maml:uri />
+          </dev:type>
+        </command:parameter>
+        <!-- Parameter: LogPathStdout -->
+        <command:parameter required="false" globbing="false" pipelineInput="false" position="named">
+          <maml:name>LogPathStdout</maml:name>
+          <maml:description>
+            <maml:para>Specifies the optional path and file name where the stdout are written.</maml:para>
+          </maml:description>
+          <command:parameterValue required="true">string</command:parameterValue>
+          <dev:type>
+            <maml:name>System.String</maml:name>
+            <maml:uri />
+          </dev:type>
+        </command:parameter>
+        <!-- Parameter: WorkingDirectory -->
+        <command:parameter required="false" globbing="false" pipelineInput="false" position="named">
+          <maml:name>WorkingDirectory</maml:name>
+          <maml:description>
+            <maml:para>Specifies the location of the executable file or document that runs in the process.The default is the folder for the new process.</maml:para>
+          </maml:description>
+          <command:parameterValue required="true">string</command:parameterValue>
+          <dev:type>
+            <maml:name>System.String</maml:name>
+            <maml:uri />
+          </dev:type>
+          <dev:defaultValue>R:\Projects-Ruusty\PSStartExeWithOutput\StartExeWithOutput\bin\Release</dev:defaultValue>
+        </command:parameter>
+      </command:syntaxItem>
+    </command:syntax>
+    <command:parameters>
+      <!-- Parameter: FilePath -->
+      <command:parameter required="true" globbing="false" pipelineInput="false" position="0">
+        <maml:name>FilePath</maml:name>
+        <maml:description>
+          <maml:para>Specifies the optional path and file name of the program that runs in the process. Enter the name of an executable file</maml:para>
+        </maml:description>
+        <command:parameterValue required="true">string</command:parameterValue>
+        <dev:type>
+          <maml:name>System.String</maml:name>
+          <maml:uri />
+        </dev:type>
+      </command:parameter>
+      <!-- Parameter: ArgumentList -->
+      <command:parameter required="false" globbing="false" pipelineInput="false" position="1">
+        <maml:name>ArgumentList</maml:name>
+        <maml:description>
+          <maml:para>Specifies parameters or parameter values to use when this cmdlet starts the process.If parameters or parameter values contain a space, they need surrounded with escaped double quotes</maml:para>
+        </maml:description>
+        <command:parameterValue required="true">string[]</command:parameterValue>
+        <dev:type>
+          <maml:name>System.String[]</maml:name>
+          <maml:uri />
+        </dev:type>
+      </command:parameter>
+      <!-- Parameter: WorkingDirectory -->
+      <command:parameter required="false" globbing="false" pipelineInput="false" position="named">
+        <maml:name>WorkingDirectory</maml:name>
+        <maml:description>
+          <maml:para>Specifies the location of the executable file or document that runs in the process.The default is the folder for the new process.</maml:para>
+        </maml:description>
+        <command:parameterValue required="true">string</command:parameterValue>
+        <dev:type>
+          <maml:name>System.String</maml:name>
+          <maml:uri />
+        </dev:type>
+        <dev:defaultValue>R:\Projects-Ruusty\PSStartExeWithOutput\StartExeWithOutput\bin\Release</dev:defaultValue>
+      </command:parameter>
+      <!-- Parameter: LogPathStdout -->
+      <command:parameter required="false" globbing="false" pipelineInput="false" position="named">
+        <maml:name>LogPathStdout</maml:name>
+        <maml:description>
+          <maml:para>Specifies the optional path and file name where the stdout are written.</maml:para>
+        </maml:description>
+        <command:parameterValue required="true">string</command:parameterValue>
+        <dev:type>
+          <maml:name>System.String</maml:name>
+          <maml:uri />
+        </dev:type>
+      </command:parameter>
+      <!-- Parameter: LogPathStderr -->
+      <command:parameter required="false" globbing="false" pipelineInput="false" position="named">
+        <maml:name>LogPathStderr</maml:name>
+        <maml:description>
+          <maml:para>Specifies the optional path and file name where the stderr are written.</maml:para>
+        </maml:description>
+        <command:parameterValue required="true">string</command:parameterValue>
+        <dev:type>
+          <maml:name>System.String</maml:name>
+          <maml:uri />
+        </dev:type>
+      </command:parameter>
+      <!-- Parameter: ExitCodeList -->
+      <command:parameter required="false" globbing="false" pipelineInput="false" position="named">
+        <maml:name>ExitCodeList</maml:name>
+        <maml:description>
+          <maml:para>Specifies the valid return codes of the executable</maml:para>
+        </maml:description>
+        <command:parameterValue required="true">int[]</command:parameterValue>
+        <dev:type>
+          <maml:name>System.Int32[]</maml:name>
+          <maml:uri />
+        </dev:type>
+        <dev:defaultValue>System.Int32[]</dev:defaultValue>
+      </command:parameter>
+    </command:parameters>
+    <command:inputTypes />
+    <command:returnValues />
+    <command:examples>
+      <command:example>
+        <maml:title>----------  EXAMPLE 1  ----------</maml:title>
+        <dev:code>Start-ExeWithOutput -FilePath "sleep.exe" -ArgumentList 5</dev:code>
+        <dev:remarks>
+          <maml:para>Sleep for 5 seconds</maml:para>
+        </dev:remarks>
+      </command:example>
+    </command:examples>
+  </command:command>
+</helpItems>
