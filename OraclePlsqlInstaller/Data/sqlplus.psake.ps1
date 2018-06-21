@@ -44,7 +44,7 @@ https://github.com/psake/psake
 #>
 #$VerbosePreference= 'Continue'
 Framework '4.0'
-Set-StrictMode -Version 4 
+Set-StrictMode -Version 4
 $me = $MyInvocation.MyCommand.Definition
 filter Skip-Empty { $_ | ?{ $_ -ne $null -and $_ } }
 
@@ -52,7 +52,7 @@ Import-Module OraclePlsqlInstaller
 
 FormatTaskName "`r`n[------{0}------]`r`n"
 
-task whatif -depends Clean, Init, Start-Logging, Show-Settings, Test-Connect, Accept, Whatif-sqlplus, Stop-Logging, Archive, Result -description ="Testing only"
+task whatif -depends Clean, Init, Start-Logging, Show-Settings, Test-Connect, Accept, Whatif-sqlplus, Stop-Logging, Archive, Result -description ="Whatif No installation into database"
 
 task default -depends install
 
@@ -82,7 +82,7 @@ properties {
   $whatif = $false;
   $now = [System.DateTime]::Now
   write-verbose($("CurrentLocation={0}" -f $executionContext.SessionState.Path.CurrentLocation))
-  
+
   write-host($VerbosePreference)
   Set-Variable -Name "JobName" -Description "Literal Path of the directory containing the psake file and associated sql files." -value $(Split-Path -Path $executionContext.SessionState.Path.CurrentLocation -Leaf)
   Set-Variable -Name "JobDir" -Description "Literal Path of the directory containing the psake file and associated sql files." -value $($executionContext.SessionState.Path.CurrentLocation)
@@ -130,11 +130,11 @@ task Show-SqlCommands -description "Display the command" -depends init {
 task Init -Description "Initialize the environment based on the properties" {
   Write-Verbose("Verbose is on")
   if (!($sdlc)) { throw "Variable SDLC not Set" }
-  
+
   # VerbosePreference doesn't work under psake, must explicity define on the command line
   $(get-module OraclePlsqlInstaller).ExportedCommands.Keys | Out-String | write-verbose
   $initArgs = @{
-    directory = $PSScriptRoot 
+    directory = $PSScriptRoot
     sqlSpec = $cfg_sqlSpec;
     logFileSuffix = $IsoDateTimeStr;
     netServiceNames = Set-SdlcConnections $sdlc.ToUpper();

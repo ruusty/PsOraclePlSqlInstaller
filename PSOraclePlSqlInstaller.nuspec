@@ -12,7 +12,7 @@
     <summary>PowerShell module to automate installing Oracle Pl/Sql code into an Oracle database</summary>
     <description>PowerShell module to automate installing Oracle Pl/Sql code into an Oracle database</description>
     <copyright></copyright>
-    <tags> powershell pl/sql </tags>
+    <tags> powershell pl/sql oracle </tags>
   </metadata>
   <files>
     <file target="tools" src="tools\ChocolateyInstall.ps1" />

@@ -1,16 +1,16 @@
 
-# PR-785000-DESCRIPTIVENAME
+# Deliverable Name
 
-<pre style="font-size: .75em;">
-Project:        
-Product:        PR-000000-DESCRIPTIVENAME-Ora
+~~~
+Project:        GIS/OMS
+Product:        DeliverableName-Ora
 Version:        4.3.0.0
-Date:           2017-05-15
-Description:    PR-000000-PON-ORA Oracle into SDLC OMS database.
+Date:           2018-06-21
+Description:    NAME-ORA Oracle into SDLC OMS database.
 
 CHED Services
 
-</pre>
+~~~
 
 <a name="TOC"></a>
 # Table of Contents
@@ -24,14 +24,8 @@ CHED Services
 <a name="description"></a>
 ## Description [&uarr;](#TOC) ##
 
-Fixes the following :-
+Does what ?
 
-http://corpvmvsmp01/vsm9p/Core.aspx?LITE&BTN_CALLNO000000=TRUE
-
-
-Enhances
-
-http://corpvmvsmp01/vsm9p/Core.aspx?LITE&BTN_CALLNO000000=TRUE
 
 
 Installs *Pl/Sql* code into Oracle SDLC databases in a repeatable and configurable manner.
@@ -39,42 +33,51 @@ Installs *Pl/Sql* code into Oracle SDLC databases in a repeatable and configurab
 <a name="installation"></a>
 ## Installation [&uarr;](#TOC) ##
 
-Where SDLC == `['DEV'|'TEST'|'UAT'|'PROD']`
+SDLC == `['DEV'|'TEST'|'UAT'|'PROD']`
 
 
 
-### Step 0 ###
+### Step 0 (Entry Criteria) ###
 
-Blah-Blah
+The following Chocolatey packages.
+
+~~~
+cinst psake
+cinst PSOraclePlSqlInstaller
+~~~
+
+
+
 
 ### Step 1 ###
 
 **Entry Criteria**
 
-- Open a Windows Console at the deliverables.
+- Open a Windows Console at the deliverables **Win+R**
  
 ~~~
-cmd.exe  /k cd /d  "G:\MKT\DEPT\IT Spatial\OMS GIS\Change Requests 2017\PR-000000-DESCRIPTIVENAME\Deploy\PROD\PR-000000-PON-ORA.4.3.mmmm.nnnn"
+cmd.exe  /k cd /d  "G:\MKT\DEPT\IT Spatial\OMS GIS\Change Requests 2018\.."
 
 ~~~
+
+- See what the install does. Will prompt for and test credentials.
+
+~~~
+install SDLC whatif
+~~~
+
 
 - Install the Oracle objects into the OMS database.
 
 ~~~
-install SDLC
+install SDLC 
 ~~~
 
 
-### Step 2 ###
 
+**Exit Criteria**
 
-
-**Entry Criteria**
-
-- Successful Step 1
-
-Blah-Blah Description of what we are doing.
-
+`Build Succeeded!` at the end of the output.
 
 
 <a name="references"></a>
@@ -101,9 +104,8 @@ This enables the following :-
 #### Implementation ####
 
 
-`sql.default.ps1` *psake* file that orchestrates the pl/sql deployment. 
+`sqlplus.psake.ps1` *psake* file that orchestrates the pl/sql deployment. 
 
-`OraclePlsqlInstaller` folder contains a PowerShell module used by the *psake* file `sql.default.ps1`
 
 `PlSql-sample-installers` folder contains sample *pl/sql* code to install objects of different types into an Oracle database.
 

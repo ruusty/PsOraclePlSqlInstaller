@@ -58,5 +58,5 @@ powershell -NoProfile -ExecutionPolicy unrestricted import-module -verbose `'$ps
   }
 }
 
-Install-ChocolateyPowershellModule -packageName $env:chocolateyPackageName -psModuleFullPath $(join-path $installRootDirPath $moduleName) -cmdName "md2html"
+#Install-ChocolateyPowershellModule -packageName $env:chocolateyPackageName -psModuleFullPath $(join-path $installRootDirPath $moduleName) -cmdName "md2html"
 

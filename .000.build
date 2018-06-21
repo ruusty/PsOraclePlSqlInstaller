@@ -41,6 +41,15 @@
         </exec>
     </target>
 
+    <target name="clean" description="Clean the Build">
+        <exec program="cmd.exe" verbose="true" workingdir="${proj.topdir}" failonerror="true">
+            <arg line="/C"/>
+            <arg line="psake"/>
+            <arg line="build.psake.ps1"/>
+            <arg line="clean"/>
+        </exec>
+    </target>
+
     <target name="?" description="Help">
         <exec program="cmd.exe" verbose="true" workingdir="${proj.topdir}" failonerror="true">
             <arg line="/C"/>

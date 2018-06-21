@@ -1,14 +1,13 @@
-﻿<Project>
+﻿<Project Synchronized="False" SyncFilter="*.ps1;*.psm1;*.psd1;*.ps1xml;*.psf;*.pss;*.xml;*.help.txt">
   <Version>2.0</Version>
   <FileID>48fbe8ff-f0ad-49c7-baec-84798257600f</FileID>
   <ProjectType>2</ProjectType>
   <Folders>
     <Folder>OraclePlsqlInstaller</Folder>
     <Folder>OraclePlsqlInstaller\Public</Folder>
+    <Folder>OraclePlsqlInstaller\Data</Folder>
   </Folders>
   <Files>
-    <File Build="1">.gitignore</File>
-    <File Build="2" Shared="False">sql.default.ps1</File>
     <File Build="2">OraclePlsqlInstaller\OraclePlsqlInstaller.psd1</File>
     <File Build="2">OraclePlsqlInstaller\OraclePlsqlInstaller.psm1</File>
     <File Build="2" Shared="False">OraclePlsqlInstaller\Public\ConvertTo-SqlPlusCommands.ps1</File>
@@ -25,16 +24,15 @@
     <File Build="2" Shared="False">OraclePlsqlInstaller\Public\Set-OracleUserPassword.Tests.ps1</File>
     <File Build="2" Shared="False">OraclePlsqlInstaller\Public\Set-SdlcConnections.ps1</File>
     <File Build="2" Shared="False">OraclePlsqlInstaller\Public\Set-SdlcConnections.Tests.ps1</File>
-    <File Build="2" Shared="False">OraclePlsqlInstaller\Public\Show-OraSecret.Tests.ps1</File>
-    <File Build="2" Shared="False">OraclePlsqlInstaller\Public\Start-Executable.ps1</File>
-    <File Build="2" Shared="False">OraclePlsqlInstaller\Public\Start-Executable.Tests.ps1</File>
     <File Build="2" Shared="False">OraclePlsqlInstaller\Public\Test-OracleConnections.ps1</File>
     <File Build="2" Shared="False">OraclePlsqlInstaller\Public\Test-OracleConnections.Tests.ps1</File>
     <File Build="2" Shared="False">OraclePlsqlInstaller\Public\Show-OracleSecret.ps1</File>
-    <File Build="2" Shared="False">OraclePlsqlInstaller\Public\Start-Exe.Tests.ps1</File>
-    <File Build="2" Shared="False">OraclePlsqlInstaller\Public\Start-Exe.ps1</File>
+    <File Build="2" Shared="False">OraclePlsqlInstaller\Public\Get-OracleSecret.ps1</File>
+    <File Build="2" Shared="False">OraclePlsqlInstaller\Public\Show-OracleSecret.Tests.ps1</File>
+    <File Build="2" Shared="False">OraclePlsqlInstaller\Data\build.psake.ps1</File>
+    <File Build="2" Shared="False">OraclePlsqlInstaller\Data\sqlplus.psake.ps1</File>
+    <File Build="2" Shared="False">OraclePlsqlInstaller\Public\New-Fixtures.ps1</File>
   </Files>
   <DeployMode>Project</DeployMode>
-  <PrimaryFile>
-  </PrimaryFile>
+  <PrimaryFile></PrimaryFile>
 </Project>

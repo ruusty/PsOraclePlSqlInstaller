@@ -18,6 +18,10 @@ Import-Module Ruusty.ReleaseUtilities
 import-module md2html
 
 properties {
+  Write-Host "Verbose is ON"
+  Write-Host $('{0} ==> {1}' -f '$VerbosePreference', $VerbosePreference)
+  Write-Host $('{0} ==> {1}' -f '$DebugPreference', $DebugPreference)
+  
   $script:config_vars = @()
   # Add variable names to $config_vars to display their values
   $script:config_vars += @(
@@ -28,7 +32,7 @@ properties {
   $now = [System.DateTime]::Now
   $Branch = & { git symbolic-ref --short HEAD }
   $isMaster = if ($Branch -eq 'master') {$true} else {$false}
-  write-verbose($("CurrentLocation={0}" -f $executionContext.SessionState.Path.CurrentLocation))
+  write-debug($("CurrentLocation={0}" -f $executionContext.SessionState.Path.CurrentLocation))
   $GlobalPropertiesName=$("GisOms.Chocolatey.properties.{0}.xml" -f $env:COMPUTERNAME)
   $GlobalPropertiesPath = Ruusty.ReleaseUtilities\Find-FileUp "GisOms.Chocolatey.properties.${env:COMPUTERNAME}.xml" -verbose
   Write-Host $('$GlobalPropertiesPath:{0}' -f $GlobalPropertiesPath)
@@ -40,16 +44,40 @@ properties {
   ,"Branch"
   ,"isMaster"
     )
+  
+  $xpath= "/project/property[@name='git.exe']"
+  write-debug $xpath
+  $GitExe = $GlobalPropertiesXML.SelectNodes($xpath).value
+  
+  $xpath= "/project/property[@name='tools.7zip']"
+  write-debug $xpath
+  $7zipExe = $GlobalPropertiesXML.SelectNodes($xpath).value
+  
+  $xpath = "/project/property[@name='tools.choco']"
+  write-debug $xpath
+  $ChocoExe = $GlobalPropertiesXML.SelectNodes($xpath).value
+  
+  $xpath = "/project/property[@name='GisOms.release.MajorMinor']"
+  write-debug $xpath
+  $ProjMajorMinor = $GlobalPropertiesXML.SelectNodes($xpath).value
+  
+  $xpath = "/project/property[@name='core.delivery.dir']"
+  write-debug $xpath
+  $CoreDeliveryDirectory = $GlobalPropertiesXML.SelectNodes($xpath).value
+  
+  $xpath = "/project/property[@name='core.delivery.chocoFeed.dir']"
+  write-debug $xpath
+  $CoreChocoFeed = $GlobalPropertiesXML.SelectNodes($xpath).value
+  
+  $xpath = "/project/property[@name='GisOms.release.StartDate']"
+  write-debug $xpath
+  $CoreReleaseStartDate = $GlobalPropertiesXML.SelectNodes($xpath).value
+  
+#  $xpath = "/project/property[@name='Spatial_GitHub.Path']"
+#  write-debug $xpath
+#  $SpatialGitHubPath = $GlobalPropertiesXML.SelectNodes($xpath).value
+  
 
-
-  $GitExe = $GlobalPropertiesXML.SelectNodes("/project/property[@name='git.exe']").value
-  $7zipExe = $GlobalPropertiesXML.SelectNodes("/project/property[@name='tools.7zip']").value
-  $ChocoExe = $GlobalPropertiesXML.SelectNodes("/project/property[@name='tools.choco']").value
-  $ProjMajorMinor = $GlobalPropertiesXML.SelectNodes("/project/property[@name='GisOms.release.MajorMinor']").value
-  $CoreDeliveryDirectory = $GlobalPropertiesXML.SelectNodes("/project/property[@name='core.delivery.dir']").value
-  $CoreChocoFeed = $GlobalPropertiesXML.SelectNodes("/project/property[@name='core.delivery.chocoFeed.dir']").value
-  $CoreReleaseStartDate = $GlobalPropertiesXML.SelectNodes("/project/property[@name='GisOms.release.StartDate']").value
-  $SpatialGitHubPath = $GlobalPropertiesXML.SelectNodes("/project/property[@name='Spatial_GitHub.Path']").value
   $script:config_vars += @(
   ,"GitExe"
   ,"7zipExe"
@@ -75,7 +103,8 @@ properties {
     ) 
   
   $ProjPackageListPath = Join-Path $ProjTopdir "${ProjectName}.lis"
-  $ProjPackageZipPath  = Join-Path $ProjToolsPath  "${ProjectName}.zip"
+  $ProjPackageZipPath = Join-Path $ProjToolsPath  "${ProjectName}.zip"
+  $ProjPackageZipPath = Join-Path $ProjDistPath   "${ProjectName}.zip"
   $ProjDeliveryPath= Join-Path $CoreDeliveryDirectory "GisOms"
   $ProjDeliveryPath = Join-Path $(Join-Path $ProjDeliveryPath ${ProjectName})  '${versionNum}'  #Expand dynamically versionNum not set
   #$ProjPackageZipVersionPath = Join-Path $ProjDeliveryPath  '${ProjectName}.${versionNum}.zip' #Expand dynamically versionNum not set
@@ -92,7 +121,7 @@ properties {
 
   $ProjHistoryPath = Join-Path $ProjTopdir "${ProjectName}.git_history.txt"
   $ProjVersionPath = Join-Path $ProjTopdir "${ProjectName}.Build.Number"
-  $ProjNuspecName = "ched-${ProjectName}"
+  $ProjNuspecName = "${ProjectName}"
   $ProjNuspec = "${ProjNuspecName}.nuspec"
   $ProjNuspecPath = Join-Path $ProjTopdir "${ProjNuspecName}.nuspec"
   $ProjNuspecPkgVersionPath = Join-Path $ProjTopdir  '${ProjNuspecName}.${versionNum}.nupkg'
@@ -123,7 +152,7 @@ properties {
   <# Robocopy settings #>
   <# Tweek exDir exFile to define files to include in zip #>
   $exDir = @("$ProjTopdir\src\.TEMPLATE", "Build", "Dist", "tools", ".git", "specs", "Specification", "wrk", "work")
-  $exFile = @("build.bat", "build.psake.ps1", "*.nuspec", ".gitignore", "*.config.ps1", "*.lis", "*.nupkg", "*.Tests.ps1", "*.html", "*Pester*", "*.Tests.Setup.ps1")
+  $exFile = @("*.nuspec", ".gitignore", "*.config.ps1", "*.lis", "*.nupkg", "*.Tests.ps1", "*.html", "*Pester*", "*.Tests.Setup.ps1")
   #Quote the elements
   $XD = ($exDir | %{ "`"$_`"" }) -join " "
   $XF = ($exFile | %{ "`"$_`"" }) -join " "
@@ -136,11 +165,9 @@ properties {
     ,"XD"
     ,"XF"
     ,"RoboSrc"
-     ,"RoboTarget"
+    ,"RoboTarget"
   )
   
-  Write-Verbose "Verbose is ON"
-  Write-Host $('{0} ==> {1}' -f '$VerbosePreference', $VerbosePreference)
 }
 
 task default -depends build
@@ -176,14 +203,14 @@ task Compile -description "Build Deliverable zip file" -depends clean, create-di
   
   foreach ($i  in @($ProjHistoryPath, $ProjVersionPath))
   {
-    Copy-Item -path $i -Destination $ProjBuildPath
+    Copy-Item -path $i -Destination "$ProjBuildPath\OraclePlsqlInstaller"
   }
   
   Write-Host "Attempting Versioning"
   $MdPathSpec = $(Join-Path -Path $ProjBuildPath -ChildPath "*.md")
   Write-Host "Attempting Versioning Markdown $MdPathSpec in $ProjBuildPath"
-  Resolve-Path -Path $MdPathSpec | %{
-    Ruusty.ReleaseUtilities\Set-VersionReadme $_.Path  $version  $now
+  Get-ChildItem -Recurse -Path $MdPathSpec | %{
+    Ruusty.ReleaseUtilities\Set-VersionReadme $_.FullName  $version  $now
   }
   
   Write-Host "Attempting to Convert Markdown to Html"
@@ -193,8 +220,8 @@ task Compile -description "Build Deliverable zip file" -depends clean, create-di
   if (Test-Path -Path $ProjPackageZipPath -Type Leaf){ Remove-Item -path $ProjPackageZipPath}
   Ruusty.ReleaseUtilities\start-exe $7zipExe -ArgumentList $zipArgs -workingdirectory $ProjBuildPath
   #Copy README and history
-  Copy-Item -Path $(Join-Path $ProjBuildPath "README.html") -Destination $ProjDistPath
-  Copy-Item -Path $ProjHistoryPath -Destination $ProjDistPath
+  #Copy-Item -Path $(Join-Path $ProjBuildPath "README.html") -Destination $ProjDistPath
+  #Copy-Item -Path $ProjHistoryPath -Destination $ProjDistPath
 }
 
 
@@ -236,15 +263,14 @@ task Distribute -description "Distribute the deliverables to Deliver" -PreCondit
 
 task DistributeTo-Delivery -description "Copy Deliverables to the Public Delivery Share" {
   $versionNum = Get-Content $ProjVersionPath
-  $DeliveryCopyArgs = @{
-    path   = @("$ProjDistPath/*.zip", "$ProjDistPath/README.*", "$ProjDistPath/*.nupkg","$ProjDistPath/tools/*.zip",$ProjHistoryPath)
-    destination = $ExecutionContext.InvokeCommand.ExpandString($ProjDeliveryPath)
-    Verbose = $VerbosePreference
-  }
-  Write-Host $("Attempting to copy deliverables to {0}" -f $DeliveryCopyArgs.Destination)
-  if (!(Test-Path $DeliveryCopyArgs.Destination)) { mkdir -Path $DeliveryCopyArgs.Destination }
-  Copy-Item @DeliveryCopyArgs
-  dir $DeliveryCopyArgs.destination | out-string | write-host
+#  $DeliveryCopyArgs = @{
+#    path   = @("$ProjDistPath/*.zip", "$ProjDistPath/README.*", "$ProjDistPath/*.nupkg","$ProjDistPath/tools/*.zip",$ProjHistoryPath)
+#    destination = $ExecutionContext.InvokeCommand.ExpandString($ProjDeliveryPath)
+#  }
+#  Write-Host $("Attempting to copy deliverables to {0}" -f $DeliveryCopyArgs.Destination)
+#  if (!(Test-Path $DeliveryCopyArgs.Destination)) { mkdir -Path $DeliveryCopyArgs.Destination }
+#  Copy-Item @DeliveryCopyArgs
+#  dir $DeliveryCopyArgs.destination | out-string | write-host
 }
 
 
