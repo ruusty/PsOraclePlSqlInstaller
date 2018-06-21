@@ -48,7 +48,7 @@ function Set-OracleUserPassword
     }
     else
     {
-      Write-Verbose "Creating $sqlPlusCommand.credentialFileName"
+      Write-Verbose $('Creating {0}' -f $sqlPlusCommand.credentialFileName ) 
       #create the credential file as it doesn't exist, get the name from the file
       $credFname = [System.IO.Path]::GetFileNameWithoutExtension($sqlPlusCommand.credentialFileName)
       if ($credFname -match '^([A-Za-z_]+)@([A-Za-z0-9_\.]+$)')
@@ -61,7 +61,8 @@ function Set-OracleUserPassword
         throw "Invalid Credential file name"
       }
       #Prompt for the credentials and save
-      [pscredential]$Credential = $(Get-Credential -UserName $sqlPlusCommand.OraUser -Message "Enter Oracle ${sqlPlusCommand.OraUser} Password for ${sqlPlusCommand.tnsName}")
+      $Msg = 'Enter Oracle {0} Password for {1}' -f $sqlPlusCommand.OraUser , $sqlPlusCommand.tnsName
+      [pscredential]$Credential = $(Get-Credential -UserName $sqlPlusCommand.OraUser -Message $Msg)
       if (!$Credential) { throw "Null credentials entered" }
       $Credential | Export-CliXml $sqlPlusCommand.credentialFileName
     }

@@ -2,8 +2,8 @@
 @rem ============================================================================
 @rem        Date : 2017-06-22
 @rem
-@rem Function : 
-@rem   Execute the Removal of old orders (after install)
+@rem  Function :
+@rem    Install pl/sql into an Oracle Database 
 @rem
 @rem ===========================================================================
 setlocal ENABLEDELAYEDEXPANSION
@@ -45,7 +45,9 @@ whoami
 @rem     Properties are set after all "properties" blocks have run
 @rem
 @echo on
-call psake "%buildfile%" -properties "@{cfg_sqlSpec=@('Z99_*-*.sql');verbose=$false;}"  -parameters "@{sdlc='%sdlc%'}"  %1
+@rem call psake "%buildfile%" -properties "@{cfg_sqlSpec=@('[0-9_][0-9_][0-9_]_*-*.sql');verbose=$false;whatif=$true;}" -parameters "@{sdlc='%sdlc%'}" %1
+@rem call psake "%buildfile%" -properties "@{cfg_sqlSpec=@('[0-9_][0-9_][0-9_]_*-*.sql');verbose=$true;whatif=$false;}" -parameters "@{sdlc='%sdlc%'}" %1
+call psake "%buildfile%" -properties "@{cfg_sqlSpec=@('[0-9_][0-9_][0-9_]_*-*.sql');verbose=$false}" -parameters "@{sdlc='%sdlc%'}" %1
 
 @echo.MSG99^>%~nx0:ERRORLEVEL=%ERRORLEVEL%
 @echo on

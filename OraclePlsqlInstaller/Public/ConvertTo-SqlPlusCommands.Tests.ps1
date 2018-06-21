@@ -9,13 +9,13 @@ $sut = (Split-Path -Leaf $MyInvocation.MyCommand.Path) -replace '\.Tests\.', '.'
 
 Describe "ConvertTo-SqlPlusCommands verbose"{
     It "does something useful" {
-        ConvertTo-SqlPlusCommands -directory $(join-path $PSScriptRoot "..\Specification") -verbose | write-host
+        ConvertTo-SqlPlusCommands -directory $(join-path $PSScriptRoot "..\Specification\Data") -verbose | write-host
     }
 }
 
 Describe "ConvertTo-SqlPlusCommands" {
     It "does something useful" {
-        ConvertTo-SqlPlusCommands -directory $(join-path $PSScriptRoot "..\Specification")  | gm | write-host
+        ConvertTo-SqlPlusCommands -directory $(join-path $PSScriptRoot "..\SpecificationSpecification\Data")  | gm | write-host
         #TODO
     }
 }

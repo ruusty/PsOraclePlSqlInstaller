@@ -1,7 +1,6 @@
 @{
-
-# Script module or binary module file associated with this manifest
-ModuleToProcess = 'OraclePlsqlInstaller.psm1'
+  # Script module or binary module file associated with this manifest
+RootModule = 'OraclePlsqlInstaller.psm1'
 
 # Version number of this module.
 ModuleVersion = '4.3.0.3'
