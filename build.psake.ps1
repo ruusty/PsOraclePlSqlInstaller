@@ -21,7 +21,7 @@ properties {
   Write-Host "Verbose is ON"
   Write-Host $('{0} ==> {1}' -f '$VerbosePreference', $VerbosePreference)
   Write-Host $('{0} ==> {1}' -f '$DebugPreference', $DebugPreference)
-  
+
   $script:config_vars = @()
   # Add variable names to $config_vars to display their values
   $script:config_vars += @(
@@ -44,39 +44,39 @@ properties {
   ,"Branch"
   ,"isMaster"
     )
-  
+
   $xpath= "/project/property[@name='git.exe']"
   write-debug $xpath
   $GitExe = $GlobalPropertiesXML.SelectNodes($xpath).value
-  
+
   $xpath= "/project/property[@name='tools.7zip']"
   write-debug $xpath
   $7zipExe = $GlobalPropertiesXML.SelectNodes($xpath).value
-  
+
   $xpath = "/project/property[@name='tools.choco']"
   write-debug $xpath
   $ChocoExe = $GlobalPropertiesXML.SelectNodes($xpath).value
-  
+
   $xpath = "/project/property[@name='GisOms.release.MajorMinor']"
   write-debug $xpath
   $ProjMajorMinor = $GlobalPropertiesXML.SelectNodes($xpath).value
-  
+
   $xpath = "/project/property[@name='core.delivery.dir']"
   write-debug $xpath
   $CoreDeliveryDirectory = $GlobalPropertiesXML.SelectNodes($xpath).value
-  
+
   $xpath = "/project/property[@name='core.delivery.chocoFeed.dir']"
   write-debug $xpath
   $CoreChocoFeed = $GlobalPropertiesXML.SelectNodes($xpath).value
-  
+
   $xpath = "/project/property[@name='GisOms.release.StartDate']"
   write-debug $xpath
   $CoreReleaseStartDate = $GlobalPropertiesXML.SelectNodes($xpath).value
-  
+
 #  $xpath = "/project/property[@name='Spatial_GitHub.Path']"
 #  write-debug $xpath
 #  $SpatialGitHubPath = $GlobalPropertiesXML.SelectNodes($xpath).value
-  
+
 
   $script:config_vars += @(
   ,"GitExe"
@@ -88,7 +88,7 @@ properties {
   ,"CoreReleaseStartDate"
   ,"SpatialGitHubPath"
     )
-  
+
   $ProjectName = [System.IO.Path]::GetFileName($PSScriptRoot)
   $ProjTopdir = $PSScriptRoot
   $ProjBuildPath = Join-Path $ProjTopdir "Build"
@@ -100,8 +100,8 @@ properties {
   ,"ProjBuildPath"
   ,"ProjDistPath"
   ,"ProjToolsPath"
-    ) 
-  
+    )
+
   $ProjPackageListPath = Join-Path $ProjTopdir "${ProjectName}.lis"
   $ProjPackageZipPath = Join-Path $ProjToolsPath  "${ProjectName}.zip"
   $ProjPackageZipPath = Join-Path $ProjDistPath   "${ProjectName}.zip"
@@ -121,6 +121,7 @@ properties {
 
   $ProjHistoryPath = Join-Path $ProjTopdir "${ProjectName}.git_history.txt"
   $ProjVersionPath = Join-Path $ProjTopdir "${ProjectName}.Build.Number"
+  $ProjReadmePath   = Join-Path $ProjTopdir "README.md"
   $ProjNuspecName = "${ProjectName}"
   $ProjNuspec = "${ProjNuspecName}.nuspec"
   $ProjNuspecPath = Join-Path $ProjTopdir "${ProjNuspecName}.nuspec"
@@ -135,8 +136,9 @@ properties {
     ,"ProjHistorySinceDate"
      ,"ProjPackageZipVersionPath"
     ,"ProjNuspec"
+     ,"ProjReadmePath"
       )
-  
+
   Set-Variable -Name "sdlc" -Description "System Development Lifecycle Environment" -Value "UNKNOWN"
   $sdlcs = @('prod', 'uat','test','dev') #nupkg specific to a SDLC
   $sdlcs = @('ALL')                      #nupkg does all SDLCs
@@ -148,7 +150,7 @@ properties {
      ,"sdlc"
     ,"sdlcs"
   )
-  
+
   <# Robocopy settings #>
   <# Tweek exDir exFile to define files to include in zip #>
   $exDir = @("$ProjTopdir\src\.TEMPLATE", "Build", "Dist", "tools", ".git", "specs", "Specification", "wrk", "work")
@@ -167,7 +169,9 @@ properties {
     ,"RoboSrc"
     ,"RoboTarget"
   )
-  
+
+  Write-Verbose "Verbose is ON"
+  Write-Host $('{0} ==> {1}' -f '$VerbosePreference', $VerbosePreference)
 }
 
 task default -depends build
@@ -179,10 +183,10 @@ task      build -depends Show-Settings, git-status, clean, create-dirs, git-hist
 task Compile -description "Build Deliverable zip file" -depends clean, create-dirs, set-version   {
   $versionNum = Get-Content $ProjVersionPath
   $version = [system.Version]::Parse($versionNum)
-    
+
   Write-Verbose "Verbose is on"
   Write-Host "Attempting to get source files"
-    
+
   $RoboArgs = @($RoboSrc, $RoboTarget, '/S', '/XD', $XD, '/XF', $XF)
   Write-Host $('Robocopy.exe {0}' -f $RoboArgs -join " ")
   try
@@ -198,24 +202,24 @@ task Compile -description "Build Deliverable zip file" -depends clean, create-di
       Write-Error $_.Exception
     }
   }
-  
+
   #Put the History and version in the build folder.
-  
-  foreach ($i  in @($ProjHistoryPath, $ProjVersionPath))
+
+  foreach ($i  in @($ProjHistoryPath, $ProjVersionPath,$ProjReadmePath))
   {
     Copy-Item -path $i -Destination "$ProjBuildPath\OraclePlsqlInstaller"
   }
-  
+
   Write-Host "Attempting Versioning"
   $MdPathSpec = $(Join-Path -Path $ProjBuildPath -ChildPath "*.md")
   Write-Host "Attempting Versioning Markdown $MdPathSpec in $ProjBuildPath"
   Get-ChildItem -Recurse -Path $MdPathSpec | %{
     Ruusty.ReleaseUtilities\Set-VersionReadme $_.FullName  $version  $now
   }
-  
+
   Write-Host "Attempting to Convert Markdown to Html"
   md2html\Convert-Markdown2Html -path $ProjBuildPath -recurse -verbose
-  
+
   Write-Host "Attempting to create zip file with '$zipArgs'"
   if (Test-Path -Path $ProjPackageZipPath -Type Leaf){ Remove-Item -path $ProjPackageZipPath}
   Ruusty.ReleaseUtilities\start-exe $7zipExe -ArgumentList $zipArgs -workingdirectory $ProjBuildPath
@@ -245,12 +249,12 @@ task Compile-nupkg-multi -description "Compile Multiple Chocolatey sdlc nupkg fr
     Write-Host "Attempting to get Chocolatey Install Scripts for $sdlc"
     Copy-Item -path "tools" -Destination $ProjDistPath -Recurse -force
     Ruusty.ReleaseUtilities\Set-Token -Path $(join-path $ProjDistPath "tools/properties.ps1") -key "SDLC" -value $sdlc
-    
+
     Write-Host "Attempting to get *.nuspec  for $sdlc"
     Copy-Item -path $ProjNuspecPath -Destination $ProjDistPath
     Ruusty.ReleaseUtilities\Set-Token -Path $(join-path $ProjDistPath $ProjNuspec) -key "SDLC" -value $sdlc
     Ruusty.ReleaseUtilities\Set-Token -Path $(join-path $ProjDistPath $ProjNuspec) -key "SDLC_SUFFIX" -value "-${sdlc}"
-    
+
     exec { & $ChocoExe pack $(join-path $ProjDistPath $ProjNuspec) --version $versionNum --outputdirectory $ProjDistPath }
   }
 }
@@ -311,11 +315,11 @@ task create-dirs {
 task clean -description "Remove all generated files" -depends clean-dirs {
   if ($isMaster)
   {
-    exec { & $GitExe "clean" -X -f } 
+    exec { & $GitExe "clean" -X -f }
   }
   else
   {
-    exec { & $GitExe "clean" -X -f --dry-run } 
+    exec { & $GitExe "clean" -X -f --dry-run }
   }
 }
 
@@ -410,7 +414,7 @@ task set-buildList -description "Generate the list of files to go in the zip del
   mkdir $RoboTarget
   $RoboArgs = @($RoboSrc, $RoboTarget, '/S', '/XD', $XD ,'/XF' ,$XF ,'/L' ,$('/LOG:{0}'-f $RoboCopyLog) ,'/FP','/NDL' ,'/NP','/X')
   Write-Host $('Robocopy.exe {0}' -f $RoboArgs -join " ")
-  
+
   try
   {
     Ruusty.ReleaseUtilities\start-exe "Robocopy.exe" -ArgumentList $RoboArgs #-workingdirectory $ProjBuildPath
@@ -424,12 +428,12 @@ task set-buildList -description "Generate the list of files to go in the zip del
       Write-Error $_.Exception
     }
   }
-  
+
   $matches = (Select-String -simple -Pattern "    New File  " -path $RoboCopyLog).line
   $csv = $matches | ConvertFrom-Csv -Delimiter "`t" -Header @("H1", "H2", "H3", "H4", "H5")
   $pathPrefix = ($RoboSrc.Trim('"')).Replace("/", "\").Replace("\", "\\") + "\\"
   Write-Verbose "Removing PathPrefix $pathPrefix from $RoboCopyLog"
-  
+
   #Remove the Absolute Path prefix
   ($csv.h5) | set-content -Path $scratchFile
   @((Split-Path -path $ProjHistoryPath -Leaf), (Split-Path -path $ProjVersionPath -Leaf)) | Add-Content -path $scratchFile
@@ -466,7 +470,7 @@ task Test -description "Pester tests"{
 
 
 #Task getDependencies -description "Get shared dependencies from Git" {
-#  #region  Get the file the Spatial_GitHub 
+#  #region  Get the file the Spatial_GitHub
 #  Write-Host "Attempting to get Get-GisOmsSdlc.ps1"
 #  GisOmsUtils\Get-GitFile -gitRemote $(join-path -path $SpatialGitHubPath -child "ChocoPkgContents/PSGisOmsRelease.git" ) -gitBranch "master" -gitFilePath "GisOmsRelease\Public\Get-GisOmsSdlc.ps1" -destPath $ProjBuildPath -verbose
 #  Move-Item $(Join-Path $ProjBuildPath "GisOmsRelease\Public\Get-GisOmsSdlc.ps1") $(Join-Path $ProjTopdir "tools/Get-GisOmsSdlc.ps1") -Force
