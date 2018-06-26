@@ -16,6 +16,41 @@ FormatTaskName "`r`n[------{0}------]`r`n"
 
 Import-Module Ruusty.ReleaseUtilities
 import-module md2html
+<#
+  .SYNOPSIS
+    Get a setting from xml
+  
+  .DESCRIPTION
+    A detailed description of the Get-SettingFromXML function.
+
+#>
+function Get-SettingFromXML
+{
+  [CmdletBinding()]
+  param
+  (
+    [Parameter(Mandatory = $true,
+               Position = 0)]
+    [system.Xml.XmlDocument]$Xmldoc,
+    [Parameter(Mandatory = $true,
+               Position = 1)]
+    [string]$xpath
+  )
+  write-debug $('Getting value from xpath : {0}' -f $xpath)
+  try
+  {
+    $Xmldoc.SelectNodes($xpath).value
+  }
+  # Catch specific types of exceptions thrown by one of those commands
+  catch [System.Exception] {
+    Write-Error -Exception $_.Exception
+  }
+  # Catch all other exceptions thrown by one of those commands
+  catch
+  {
+    Throw "XML error"
+  }
+}
 
 properties {
   Write-Host "Verbose is ON"
@@ -44,39 +79,15 @@ properties {
   ,"Branch"
   ,"isMaster"
     )
-
-  $xpath= "/project/property[@name='git.exe']"
-  write-debug $xpath
-  $GitExe = $GlobalPropertiesXML.SelectNodes($xpath).value
-
-  $xpath= "/project/property[@name='tools.7zip']"
-  write-debug $xpath
-  $7zipExe = $GlobalPropertiesXML.SelectNodes($xpath).value
-
-  $xpath = "/project/property[@name='tools.choco']"
-  write-debug $xpath
-  $ChocoExe = $GlobalPropertiesXML.SelectNodes($xpath).value
-
-  $xpath = "/project/property[@name='GisOms.release.MajorMinor']"
-  write-debug $xpath
-  $ProjMajorMinor = $GlobalPropertiesXML.SelectNodes($xpath).value
-
-  $xpath = "/project/property[@name='core.delivery.dir']"
-  write-debug $xpath
-  $CoreDeliveryDirectory = $GlobalPropertiesXML.SelectNodes($xpath).value
-
-  $xpath = "/project/property[@name='core.delivery.chocoFeed.dir']"
-  write-debug $xpath
-  $CoreChocoFeed = $GlobalPropertiesXML.SelectNodes($xpath).value
-
-  $xpath = "/project/property[@name='GisOms.release.StartDate']"
-  write-debug $xpath
-  $CoreReleaseStartDate = $GlobalPropertiesXML.SelectNodes($xpath).value
-
-#  $xpath = "/project/property[@name='Spatial_GitHub.Path']"
-#  write-debug $xpath
-#  $SpatialGitHubPath = $GlobalPropertiesXML.SelectNodes($xpath).value
-
+  
+  $GitExe = Get-SettingFromXML -xmldoc $GlobalPropertiesXML -xpath "/project/property[@name='git.exe']"
+  $7zipExe = Get-SettingFromXML -xmldoc $GlobalPropertiesXML -xpath "/project/property[@name='tools.7zip']"
+  $ProjMajorMinor = Get-SettingFromXML -xmldoc $GlobalPropertiesXML -xpath "/project/property[@name='GisOms.release.MajorMinor']"
+  $CoreDeliveryDirectory = Get-SettingFromXML -xmldoc $GlobalPropertiesXML -xpath "/project/property[@name='core.delivery.dir']"
+  $CoreReleaseStartDate = Get-SettingFromXML -xmldoc $GlobalPropertiesXML -xpath "/project/property[@name='GisOms.release.StartDate']"
+  $ChocoExe = Get-SettingFromXML -xmldoc $GlobalPropertiesXML -xpath "/project/property[@name='tools.choco']"
+  $CoreChocoFeed = Get-SettingFromXML -xmldoc $GlobalPropertiesXML -xpath "/project/property[@name='core.delivery.chocoFeed.dir']"
+ 
 
   $script:config_vars += @(
   ,"GitExe"
@@ -103,22 +114,15 @@ properties {
     )
 
   $ProjPackageListPath = Join-Path $ProjTopdir "${ProjectName}.lis"
-  $ProjPackageZipPath = Join-Path $ProjToolsPath  "${ProjectName}.zip"
-  $ProjPackageZipPath = Join-Path $ProjDistPath   "${ProjectName}.zip"
-  $ProjDeliveryPath= Join-Path $CoreDeliveryDirectory "GisOms"
-  $ProjDeliveryPath = Join-Path $(Join-Path $ProjDeliveryPath ${ProjectName})  '${versionNum}'  #Expand dynamically versionNum not set
-  #$ProjPackageZipVersionPath = Join-Path $ProjDeliveryPath  '${ProjectName}.${versionNum}.zip' #Expand dynamically versionNum not set
-  $ProjPackageZipVersionPath = Join-Path $ProjDeliveryPath  "${ProjectName}.zip"
+  $ProjPackageZipPath = Join-Path $ProjDistPath "${ProjectName}.zip"
+  $zipArgs = 'a -bb2 -tzip "{0}" -ir0@"{1}"' -f $ProjPackageZipPath, $ProjPackageListPath # Get paths from file
+  
   $script:config_vars += @(
-  "ProjPackageListPath"
-  ,"ProjPackageZipPath"
-  ,"ProjDeliveryPath"
-  ,"ProjDeliveryPath"
-  ,"ProjPackageZipVersionPath"
-)
-
-
-
+    "ProjPackageListPath"
+     ,"ProjPackageZipPath"
+     ,"zipArgs"
+  )
+  
   $ProjHistoryPath = Join-Path $ProjTopdir "${ProjectName}.git_history.txt"
   $ProjVersionPath = Join-Path $ProjTopdir "${ProjectName}.Build.Number"
   $ProjReadmePath   = Join-Path $ProjTopdir "README.md"
@@ -128,25 +132,22 @@ properties {
   $ProjNuspecPkgVersionPath = Join-Path $ProjTopdir  '${ProjNuspecName}.${versionNum}.nupkg'
   $ProjHistorySinceDate ="2015-05-01"
   $script:config_vars += @(
-     "ProjHistoryPath"
-    ,"ProjVersionPath"
-    ,"ProjNuspecName"
-    ,"ProjNuspecPath"
-    ,"ProjNuspecPkgVersionPath"
-    ,"ProjHistorySinceDate"
+    "ProjHistoryPath"
+     ,"ProjVersionPath"
+     ,"ProjNuspecName"
+     ,"ProjNuspecPath"
+     ,"ProjNuspecPkgVersionPath"
+     ,"ProjHistorySinceDate"
      ,"ProjPackageZipVersionPath"
-    ,"ProjNuspec"
+     ,"ProjNuspec"
      ,"ProjReadmePath"
-      )
-
+  )
+  
   Set-Variable -Name "sdlc" -Description "System Development Lifecycle Environment" -Value "UNKNOWN"
   $sdlcs = @('prod', 'uat','test','dev') #nupkg specific to a SDLC
   $sdlcs = @('ALL')                      #nupkg does all SDLCs
 
-  $zipArgs = 'a -bb2 -tzip "{0}" -ir0@"{1}"' -f $ProjPackageZipPath, $ProjPackageListPath # Get paths from file
-  #$zipArgs = 'a -bb2 -tzip "{0}" -ir0!*' -f $ProjPackageZipPath #Everything in $ProjBuildPath
     $script:config_vars += @(
-     ,"zipArgs"
      ,"sdlc"
     ,"sdlcs"
   )

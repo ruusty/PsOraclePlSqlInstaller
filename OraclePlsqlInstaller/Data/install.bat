@@ -32,6 +32,7 @@ if  not defined sdlc goto batch_help
 if "%sdlc%" == "" goto batch_help
 
 cd /d %~dp0
+set JobName=%~n0
 
 @cd
 hostname
@@ -45,9 +46,7 @@ whoami
 @rem     Properties are set after all "properties" blocks have run
 @rem
 @echo on
-@rem call psake "%buildfile%" -properties "@{cfg_sqlSpec=@('[0-9_][0-9_][0-9_]_*-*.sql');verbose=$false;whatif=$true;}" -parameters "@{sdlc='%sdlc%'}" %1
-@rem call psake "%buildfile%" -properties "@{cfg_sqlSpec=@('[0-9_][0-9_][0-9_]_*-*.sql');verbose=$true;whatif=$false;}" -parameters "@{sdlc='%sdlc%'}" %1
-call psake "%buildfile%" -properties "@{cfg_sqlSpec=@('[0-9_][0-9_][0-9_]_*-*.sql');verbose=$false}" -parameters "@{sdlc='%sdlc%'}" %1
+call psake "%buildfile%" -properties "@{cfg_sqlSpec=@('[0-9_][0-9_][0-9_]_*-*.sql');JobName='%JobName%';verbose=$false}" -parameters "@{sdlc='%sdlc%'}" %1
 
 @echo.MSG99^>%~nx0:ERRORLEVEL=%ERRORLEVEL%
 @echo on

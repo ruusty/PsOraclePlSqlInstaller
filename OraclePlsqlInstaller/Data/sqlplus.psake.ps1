@@ -14,23 +14,10 @@ Discover the available targets
 
 .EXAMPLE
 @set buildfile=sqlplus.psake.ps1
-call psake "%buildfile%" -properties "@{cfg_sqlSpec=@('[0-9_][0-9_][0-9_]_*-*.sql');verbose=$false;whatif=$true;}" -parameters "@{sdlc='%sdlc%'}" %1
+call psake "%buildfile%" -properties "@{cfg_sqlSpec=@('[0-9_][0-9_][0-9_]_*-*.sql');verbose=$false}" -parameters "@{sdlc='%sdlc%';}" %1
 Runs the Pl/sql files in the current directory matching the pattern
 
-.EXAMPLE
-@set buildfile=sqlplus.psake.ps1
-call psake "%buildfile%" -properties "@{cfg_sqlSpec=@('[0-9_][0-9_][0-9_]_*-*.sql');verbose=$true;whatif=$false;}" -parameters "@{sdlc='%sdlc%'}" %1
-Runs the Pl/sql files in the current directory matching the pattern
 
-.EXAMPLE
-@set buildfile=sqlplus.psake.ps1
-call psake "%buildfile%" -properties "@{cfg_sqlSpec=@('[0-9_][0-9_][0-8_]_*-*.sql');verbose=$false}" -parameters "@{sdlc='%sdlc%'}" %1
-Runs the Pl/sql files in the current directory matching the pattern
-
-.EXAMPLE
-@set buildfile=sqlplus.psake.ps1
-call psake "%buildfile%" -properties "@{cfg_sqlSpec=@('[0-9_][0-9_][0-8_]_*-*.sql');verbose=$false}" -parameters "@{sdlc='%sdlc%'}" ?
-Runs the Pl/sql files in the current directory matching the pattern
 
 .NOTES
 
@@ -163,11 +150,11 @@ task Invoke-Sqlplus -depends Init -Description "Executes sqlplus.exe, Spool file
     Write-Host "Attempting : ", $sqlplusExe  $_.sqlplusArgs
     try
     {
-      Start-ExeWithOutput -FilePath $sqlplusExe -ArgumentList $_.sqlplusArgs -verbose:$verbose -whatif:$whatif
+      OraclePlsqlInstaller\Start-ExeWithOutput -FilePath $sqlplusExe -ArgumentList $_.sqlplusArgs -verbose:$verbose -whatif:$whatif
     }
     catch [Exception] {
       Stop-Transcript -ErrorAction SilentlyContinue
-      Start-ExeWithOutput -FilePath $zipExe -ArgumentList $zipArgs -verbose:$verbose -whatif:$whatif
+      OraclePlsqlInstaller\Start-ExeWithOutput -FilePath $zipExe -ArgumentList $zipArgs -verbose:$verbose -whatif:$whatif
       $errMsg = $_ | fl * -Force | Out-String
       Write-Host $errMsg
       throw
@@ -189,7 +176,7 @@ task Stop-Logging{
 task Archive -depends Init -Description "Archive the outputs in data directory to a datetime versioned zip file" {
   try
   {
-    Start-ExeWithOutput -FilePath $zipExe -ArgumentList $zipArgs -verbose:$verbose -whatif:$whatif
+    OraclePlsqlInstaller\Start-ExeWithOutput -FilePath $zipExe -ArgumentList $zipArgs -verbose:$verbose -whatif:$whatif
   }
   catch [Exception] {
     $errMsg = $_ | fl * -Force | Out-String
@@ -198,13 +185,36 @@ task Archive -depends Init -Description "Archive the outputs in data directory t
   }
 }
 
-task Result -description "Success or Failure" {
+task Result -description "Success or Failure" -depends isOraError {
   if ($script:confirmation -eq $false)
   {
-    Write-Error -Message "Invoke-Sqlplus not executed" -Category InvalidResult
+    Write-Host -Message "Invoke-Sqlplus not executed" -Category InvalidResult
   }
 }
 
+Task isOraError -description "Check for Oracle Errors in log files " -PreCondition { $script:confirmation -eq $true }  {
+  [boolean]$isErrors = $false
+  @($script:sqlCommands).GetEnumerator() | %{
+    $logPath = Join-Path -path $PSScriptRoot -childpath $_.logFileName
+    Write-Verbose -message $('Attempting : Test for Oracle Errors in {0}' -f $logPath)
+    #There should be a log file
+    if (!(Test-Path -Path $logPath ))
+    {
+      $isErrors =$true
+      Write-Warning -Message $('{0} not found' -f $logPath)
+    }
+    $rv = Select-String -Pattern '^ORA-[0-9]+' -Path $logPath
+    if ($rv)
+    {
+      $isErrors = $true
+      $rv | out-string | Write-Warning
+    }
+  }
+  if ($isErrors)
+  {
+    throw "Oracle Errors found in pl/sql log files"
+  }
+}
 
 task Show-SettingDetails -Description "Display detailed configuration variables, useful for debugging" {
  Get-Variable | format-table -Wrap | Out-Host
@@ -231,17 +241,18 @@ task Pause {
   pause
 }
 
+
 task Whatif-Sqlplus -depends Init -Description "Displays sqlplus.exe, Spool file specified as second parameter on command line" {
   New-OracleRunFixture
   @($script:sqlCommands).GetEnumerator() | %{
     Write-Host "Attempting : ", $sqlplusExe  $_.sqlplusArgs
     try
     {
-      Start-ExeWithOutput -FilePath $sqlplusExe -ArgumentList $_.sqlplusArgs -verbose:$verbose -whatif:$true
+      OraclePlsqlInstaller\Start-ExeWithOutput -FilePath $sqlplusExe -ArgumentList $_.sqlplusArgs -verbose:$verbose -whatif:$true
     }
     catch [Exception] {
       Stop-Transcript -ErrorAction SilentlyContinue
-      Start-ExeWithOutput -FilePath $zipExe -ArgumentList $zipArgs -verbose:$verbose -whatif:$whatif
+      OraclePlsqlInstaller\Start-ExeWithOutput -FilePath $zipExe -ArgumentList $zipArgs -verbose:$verbose -whatif:$whatif
       $errMsg = $_ | fl * -Force | Out-String
       Write-Host $errMsg
       throw

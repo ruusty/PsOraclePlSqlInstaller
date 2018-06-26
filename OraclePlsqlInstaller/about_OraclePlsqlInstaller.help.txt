@@ -2,15 +2,23 @@ TOPIC
     about_OraclePlsqlInstaller
     
 SHORT DESCRIPTION
-    Cmdlets used to .....
+    Cmdlets used execute Pl/Sql files based on file naming coventions
            
 LONG DESCRIPTION
-    Cmdlets used to .....
+    Cmdlets used execute Pl/Sql files based on file naming coventions
                  
     The following cmdlets are included.
 
         ConvertTo-SqlPlusCommands
         Get-OracleSecret
+        ConvertTo-SqlPlusCommands.ps1
+        Get-BuildList
+        New-Fixtures
+        New-OracleRunFixture
+        Set-OracleUserPassword
+        Set-SdlcConnections
+        Show-OracleSecret
+        Test-OracleConnections
 
 
     Get all the cmdlets in  OraclePlsqlInstaller
@@ -20,13 +28,9 @@ LONG DESCRIPTION
 
     $(get-module OraclePlsqlInstaller).ExportedCommands.Keys |% {get-help $_}
 
-
+    The Date folder contains boilerplate and example files.    
 
     SEE ALSO
-    Online help and updates: 
-            http://example.com
-    GitHub repository      : 
-            https://github.com/
 
     BitBucket repository      : 
-            https://github.com/
+            https://bitbucket.org/ruusty/psoracleplsqlinstaller/src/master/

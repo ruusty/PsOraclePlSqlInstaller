@@ -19,8 +19,12 @@ CHED Services
 <a name="Description"></a>
 ## Description [&uarr;](#TOC) ##
 
+PowerShell module to automate installing Oracle Pl/Sql code into an Oracle database
 
-See [PSOraclePlSqlInstaller.nuspec](PSOraclePlSqlInstaller.nuspec)
+~~~
+get-help about_OraclePlsqlInstaller
+~~~
+
 
 <a name="TechNotes"></a>
 ## TechNotes [&uarr;](#TOC) ##
