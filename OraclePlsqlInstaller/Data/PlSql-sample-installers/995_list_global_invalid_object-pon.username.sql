@@ -1,10 +1,3 @@
-define
-
-show user
-
-SELECT * FROM global_name;
-
-whenever sqlerror exit failure rollback
 
 
 Prompt Show all invalid object in the database.

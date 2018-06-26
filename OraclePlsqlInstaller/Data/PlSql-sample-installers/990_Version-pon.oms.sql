@@ -1,7 +1,4 @@
 
-show user
-
-whenever sqlerror exit failure rollback
 
 variable versionnum NUMBER
 variable desc_str VARCHAR2(80)

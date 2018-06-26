@@ -2,21 +2,16 @@
 
     Project : GIS/OMS
 
-Applic Name : SMS_PUSH Remediation
+Applic Name : AppName
 
      Author : Russell
 
        Date : 2015-03-03
 
-       Create the unplanned_publish_queue
-
-       this que delays the processessing of unplanned messages so the momentaries can be removed.
+       Comment
 
 ===========================================================================*/
 
-show user
-
-whenever sqlerror exit failure rollback
 
 define JOB_NAME=UNPLANNED_PUBLISH_JOB
 define QUEUE_NAME=UNPLANNED_PUBLISH_Q

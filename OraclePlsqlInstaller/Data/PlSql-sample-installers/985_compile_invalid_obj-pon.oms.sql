@@ -1,6 +1,3 @@
-show user
-
-whenever sqlerror exit failure rollback
 --whenever sqlerror continue
 
 ---- When in development we want to expose the private functions for unit testing

@@ -1,7 +1,19 @@
 /*
 Add the Unplanned dbms_scheduler jobs
 */
-show user
+--     column             define
+column USERNAME new_value l_owner noprint
+variable OWN varchar2(40)
+COLUMN OWN format A15 wrapped
+
+select USERNAME from user_users;
+execute select USERNAME into :OWN from user_users;
+print OWN
+define l_owner
+
+EXECUTE alter session set current_schema = :OWN;
+
+
 
 column REPEAT_INTERVAL format a20 wrapped
 column JOB_ACTION      format a20 wrapped
@@ -73,7 +85,7 @@ END;
 
 SELECT job_name, state, next_run_date, enabled, repeat_interval, job_action, start_date, job_creator, job_type,  last_start_date,  end_date, run_count, failure_count, comments
 FROM all_scheduler_jobs
-WHERE owner = 'OPROC' and job_name ='&JOB_NAME.'
+WHERE owner = '&l_owner.' and job_name ='&JOB_NAME.'
 /
 
 
@@ -114,7 +126,7 @@ column END_DATE         format a20 wrapped
 
 SELECT job_name, state, next_run_date, enabled, repeat_interval, job_action, start_date, job_creator, job_type,  last_start_date,  end_date, run_count, failure_count, comments
 FROM all_scheduler_jobs
-WHERE owner = 'OPROC' and job_name ='&JOB_NAME.'
+WHERE owner = '&l_owner.' and job_name ='&JOB_NAME.'
 /
 
 prompt SUCCESS

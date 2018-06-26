@@ -4,18 +4,17 @@ Remove oms_local objects
 
 
 */
-define l_owner=OMS_LOCAL
+--     column             define
+column USERNAME new_value l_owner noprint
+variable OWN varchar2(40)
+COLUMN OWN format A15 wrapped
 
-variable own varchar2(40)
-execute select '&l_owner.' into :own from dual;
-show user
+select USERNAME from user_users;
+execute select USERNAME into :OWN from user_users;
+print OWN
+define l_owner
 
-SELECT * FROM global_name;
-
-alter session set current_schema = &l_owner;
-
-whenever sqlerror exit failure rollback
-
+EXECUTE alter session set current_schema = :OWN;
 
 
 --============================================================={

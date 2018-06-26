@@ -4,16 +4,17 @@ Alter the PO_NOTIFICATION_TYPE table for Planned Outage
 
 
 */
+--     column             define
+column USERNAME new_value l_owner noprint
+variable OWN varchar2(40)
+COLUMN OWN format A15 wrapped
 
-define l_owner=OMS
-variable own varchar2(40)
-execute select '&l_owner.' into :own from dual;
+select USERNAME from user_users;
+execute select USERNAME into :OWN from user_users;
+print OWN
+define l_owner
 
-show user
-
-
-alter session set current_schema = &l_owner;
-whenever sqlerror exit failure rollback
+EXECUTE alter session set current_schema = :OWN;
 
 define tabname=PO_NOTIFICATION_TYPE
 define tabname

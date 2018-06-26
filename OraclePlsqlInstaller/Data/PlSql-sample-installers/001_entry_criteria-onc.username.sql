@@ -1,10 +1,16 @@
-define
+--     column             define
+column USERNAME new_value l_owner noprint
+variable OWN varchar2(40)
+COLUMN OWN format A15 wrapped
 
-show user
+select USERNAME from user_users;
+execute select USERNAME into :OWN from user_users;
+print OWN
+define l_owner
 
-SELECT * FROM global_name;
+EXECUTE alter session set current_schema = :OWN;
 
-whenever sqlerror exit failure rollback
+
 SELECT * FROM user_role_privs WHERE granted_role = 'DBA';
 
 DECLARE
@@ -13,11 +19,10 @@ BEGIN
 
 SELECT count(*) num_priv INTO dba_priv_found FROM user_role_privs WHERE granted_role = 'DBA';
 
-/*
 if dba_priv_found = 0  then
    RAISE_application_error(-20010, 'FATAL> ' || USER || ' does not have DBA privs. Must have dba privs to run this script.' );
 end if;
-*/
+
 
 END;
 /

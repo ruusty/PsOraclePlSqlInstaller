@@ -1,7 +1,3 @@
-show user
-
-whenever sqlerror exit failure rollback
---whenever sqlerror continue
 
 DECLARE
   compile_invalid boolean := FALSE;
