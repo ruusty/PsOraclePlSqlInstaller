@@ -1,4 +1,6 @@
-
+column MACHINE       format a10 wrapped
+column ORACLE_USER   format a10 wrapped
+column OS_USER       format a10 wrapped
 
 variable versionnum NUMBER
 variable desc_str VARCHAR2(80)

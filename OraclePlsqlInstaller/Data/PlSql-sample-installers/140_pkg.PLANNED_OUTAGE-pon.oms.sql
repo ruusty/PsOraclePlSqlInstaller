@@ -15,7 +15,7 @@ define l_owner
 
 show user
 
-EXECUTE alter session set current_schema = :OWN;
+alter session set current_schema = &l_owner.;
 
 
 define pkg_name=PLANNED_OUTAGE

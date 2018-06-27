@@ -14,7 +14,7 @@ execute select USERNAME into :OWN from user_users;
 print OWN
 define l_owner
 
-EXECUTE alter session set current_schema = :OWN;
+alter session set current_schema = &l_owner.;
 
 define tabname=PO_NOTIFICATION_TYPE
 define tabname

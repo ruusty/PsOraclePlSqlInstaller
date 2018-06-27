@@ -39,14 +39,17 @@ Import-Module OraclePlsqlInstaller
 
 FormatTaskName "`r`n[------{0}------]`r`n"
 
-task whatif -depends Clean, Init, Start-Logging, Show-Settings, Test-Connect, Accept, Whatif-sqlplus, Stop-Logging, Archive, Result -description ="Whatif No installation into database"
+Task whatif -depends Clean, Init, Start-Logging, Show-Settings, Test-Connect, Accept, Whatif-sqlplus, Validate-OraLogs, Stop-Logging, Archive, ExitStatus  -description ="Whatif No installation into database"
 
-task default -depends install
+Task default -depends install
 
-Task install -depends Clean, Init, Start-Logging, Show-Settings, Test-Connect, Accept, Invoke-sqlplus, Stop-Logging, Archive, Result  -description "Install pl/sql files into database using sqlplus.exe"
+Task install -depends Clean, Init, Start-Logging, Show-Settings, Test-Connect, Accept, Invoke-sqlplus, Validate-OraLogs, Stop-Logging, Archive, ExitStatus  -description "Install pl/sql files into database using sqlplus.exe"
 
-properties {
+Properties {
   # sdlc must be set via -parameters
+  if (!($JobName)) { throw "$JobName must be set" }
+  if (!($SDLC)) { throw "$SDLC must be set" }
+  
   $script:config_vars = @()
   # Add variable names to $config_vars to display their values
   $script:config_vars += @(
@@ -71,7 +74,6 @@ properties {
   write-verbose($("CurrentLocation={0}" -f $executionContext.SessionState.Path.CurrentLocation))
 
   write-host($VerbosePreference)
-  Set-Variable -Name "JobName" -Description "Literal Path of the directory containing the psake file and associated sql files." -value $(Split-Path -Path $executionContext.SessionState.Path.CurrentLocation -Leaf)
   Set-Variable -Name "JobDir" -Description "Literal Path of the directory containing the psake file and associated sql files." -value $($executionContext.SessionState.Path.CurrentLocation)
 
   Set-Variable -Name "IsoDateTimeStr" -Description "Time and Date Stamp string" -Value $now.ToString("yyyy-MM-ddTHH-mm-ss")
@@ -81,31 +83,30 @@ properties {
   Set-Variable -Name "ArchiveZipPath" -Description "ArchiveZipPath" -value $(join-path -Path $JobDir -ChildPath $($JobName + "." + $sdlc + "." + $IsoDateTimeStr + ".zip"))
   Set-Variable -Name "ArchiveZipContentFileSpec" -Description "ArchiveZipContentFileSpec" -value $(join-path -Path $JobDir -ChildPath "*.log")
   $zipExe = "7z.exe"
-  $zipArgs = @("-9j", $('"{0}"' -f $ArchiveZipPath), $('"{0}"' -f $ArchiveZipContentFileSpec)) #zip.exe
   $zipArgs = @("a", "-bt", "-bb2", $('"{0}"' -f $ArchiveZipPath), $('"{0}"' -f $ArchiveZipContentFileSpec)) #7z.exe
-  $zipArgs = @("a", $('"{0}"' -f $ArchiveZipPath), $('"{0}"' -f $ArchiveZipContentFileSpec)) #7z.exe 9.38
   $sqlplusExe = "sqlplus.exe"
   #Variables shared between tasks
   $script:sqlCommands = @()
   $script:confirmation = $false;
+  [boolean]$script:isOraErrors = $false
 }
 
 
-task Show-Settings -description "Display the psake configuration properties variables" -depends init {
+Task Show-Settings -description "Display the psake configuration properties variables" -depends init {
   Write-Verbose("Verbose is on")
   Get-Variable -name $script:config_vars -ea Continue | sort -Property name -CaseSensitive| Format-Table -property name, value -autosize | Out-String -Width 2000| Out-Host
   Get-Variable -name $script:config_vars -ea Continue | sort -Property name -CaseSensitive| format-list -Expand CoreOnly -property name, value | Out-String -Width 2000 | Out-Host
 }
 
 
-task Show-Passwords -description "Display the passwords in the credential files" -depends init {
+Task Show-Passwords -description "Display the passwords in the credential files" -depends init {
   Write-Verbose("Verbose is on")
   $credFiles = $script:sqlCommands | sort -Property credentialFileName -Unique |% { $_.credentialFileName }
   @($credFiles).GetEnumerator() | Show-OracleSecret  | Out-String | write-host
 }
 
 
-task Show-SqlCommands -description "Display the command" -depends init {
+Task Show-SqlCommands -description "Display the command" -depends init {
   foreach ($i in $script:sqlCommands)
   {
     write-verbose $($i)
@@ -114,7 +115,7 @@ task Show-SqlCommands -description "Display the command" -depends init {
 }
 
 
-task Init -Description "Initialize the environment based on the properties" {
+Task Init -Description "Initialize the environment based on the properties" {
   Write-Verbose("Verbose is on")
   if (!($sdlc)) { throw "Variable SDLC not Set" }
 
@@ -133,18 +134,18 @@ task Init -Description "Initialize the environment based on the properties" {
 }
 
 
-task Test-Connect -depends Init -description "Test username and password connections"{
+Task Test-Connect -depends Init -description "Test username and password connections"{
   $verbose = $true;
   $script:sqlCommands | Test-OracleConnections -sqlplusExe "sqlplus.exe" -verbose:$verbose -whatif:$whatif
 }
 
 
-task Clean -Description "Remove the previous generated files in the JobDir"  {
+Task Clean -Description "Remove the previous generated files in the JobDir"  {
   Get-Childitem -LiteralPath $JobDir -Filter "*.log" | Where-Object {-Not $_.PSIsContainer} | Foreach-Object {Remove-Item $_.FullName -WhatIf:$whatif}
 }
 
 
-task Invoke-Sqlplus -depends Init -Description "Executes sqlplus.exe, Spool file specified as second parameter on command line" -PreCondition { $script:confirmation -eq $true } {
+Task Invoke-Sqlplus -depends Init -Description "Executes sqlplus.exe, Spool file specified as second parameter on command line" -PreCondition { $script:confirmation -eq $true } {
   New-OracleRunFixture
   @($script:sqlCommands).GetEnumerator() | %{
     Write-Host "Attempting : ", $sqlplusExe  $_.sqlplusArgs
@@ -163,17 +164,17 @@ task Invoke-Sqlplus -depends Init -Description "Executes sqlplus.exe, Spool file
 }
 
 
-task Start-Logging -description "Log output" {
+Task Start-Logging -description "Log output" {
   Start-Transcript -Path $PoshLogPathAbs -verbose:$verbose -whatif:$whatif
 }
 
 
-task Stop-Logging{
+Task Stop-Logging{
   if ($whatif -ne $true) { Stop-Transcript }
 }
 
 
-task Archive -depends Init -Description "Archive the outputs in data directory to a datetime versioned zip file" {
+Task Archive -depends Init -Description "Archive the outputs in data directory to a datetime versioned zip file" {
   try
   {
     OraclePlsqlInstaller\Start-ExeWithOutput -FilePath $zipExe -ArgumentList $zipArgs -verbose:$verbose -whatif:$whatif
@@ -185,46 +186,58 @@ task Archive -depends Init -Description "Archive the outputs in data directory t
   }
 }
 
-task Result -description "Success or Failure" -depends isOraError {
+
+Task ExitStatus -description "Success or Failure"  {
   if ($script:confirmation -eq $false)
   {
-    Write-Host -Message "Invoke-Sqlplus not executed" -Category InvalidResult
+    Write-Host "Invoke-Sqlplus not executed"
+  }
+  else
+  {
+    if ($script:isOraErrors)
+    {
+      Write-Error -Message "Oracle errors found in Log file" -Category InvalidOperation
+    }
+    else
+    {
+      Write-Host "SUCCESS"
+    }
   }
 }
 
-Task isOraError -description "Check for Oracle Errors in log files " -PreCondition { $script:confirmation -eq $true }  {
-  [boolean]$isErrors = $false
+
+Task Validate-OraLogs -description "Check for Oracle Errors in log files " -PreCondition { $script:confirmation -eq $true }  {
   @($script:sqlCommands).GetEnumerator() | %{
     $logPath = Join-Path -path $PSScriptRoot -childpath $_.logFileName
     Write-Verbose -message $('Attempting : Test for Oracle Errors in {0}' -f $logPath)
     #There should be a log file
     if (!(Test-Path -Path $logPath ))
     {
-      $isErrors =$true
+      $script:isOraErrors =$true
       Write-Warning -Message $('{0} not found' -f $logPath)
     }
     $rv = Select-String -Pattern '^ORA-[0-9]+' -Path $logPath
     if ($rv)
     {
-      $isErrors = $true
+      $script:isOraErrors = $true
       $rv | out-string | Write-Warning
     }
   }
-  if ($isErrors)
+  if ($script:isOraErrors)
   {
-    throw "Oracle Errors found in pl/sql log files"
+    Write-Warning "Oracle Errors found in pl/sql log files"
   }
 }
 
-task Show-SettingDetails -Description "Display detailed configuration variables, useful for debugging" {
+Task Show-SettingDetails -Description "Display detailed configuration variables, useful for debugging" {
  Get-Variable | format-table -Wrap | Out-Host
 }
 
 Task Get-DeliverableList -description "Create a list of files that should be in the zip file"{
-  Get-BuildList -BuildPath "Specification.build"
+  OraclePlsqlInstaller\Get-BuildList -BuildPath "Specification.build"
 }
 
-task Accept -Description "Visual confirmation that we are hitting the correct configuration "-depends init{
+Task Accept -Description "Visual confirmation that we are hitting the correct configuration "-depends init{
   foreach ($i in $script:sqlCommands) {
     write-verbose $($i.fileName)
     write-host $sqlplusExe,$i.sqlplusArgs
@@ -258,14 +271,15 @@ task Whatif-Sqlplus -depends Init -Description "Displays sqlplus.exe, Spool file
       throw
     }
   }
+  $script:confirmation = $false
 }
 
 
-task ? -Description "Helper to display task info" -depends help {
+Task ? -Description "Helper to display task info" -depends help {
 }
 
 
-task help -Description "Helper to display task info" {
+Task help -Description "Helper to display task info" {
   Invoke-psake -buildfile $me -detaileddocs -nologo
   Invoke-psake -buildfile $me -docs -nologo
 }

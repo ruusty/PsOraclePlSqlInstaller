@@ -14,7 +14,7 @@ print OWN
 define l_owner
 
 
-EXECUTE alter session set current_schema = :OWN;
+alter session set current_schema = &l_owner.;
 
 
 define pkg_name=CHED_UTILS

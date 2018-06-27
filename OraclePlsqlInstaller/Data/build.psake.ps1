@@ -100,7 +100,7 @@ properties {
   ,"CoreDeliveryDirectory"
   ,"CoreReleaseStartDate"
     )
-
+  
   $ProjectName = [System.IO.Path]::GetFileName($PSScriptRoot)
   $ProjTopdir = $PSScriptRoot
   $ProjBuildPath = Join-Path $ProjTopdir "Build"
@@ -141,7 +141,13 @@ properties {
   <# Robocopy settings #>
   <# Tweek exDir exFile to define files to include in zip #>
   $exDir = @( "Build", "Dist", "tools", ".git", "specs", "Specification", "wrk", "work")
-  $exFile = @("build.bat", "build.psake.ps1", "*.nuspec", ".gitignore", "*.config.ps1", "*.lis", "*.nupkg", "*.Tests.ps1", "*.html", "*Pester*", "*.Tests.Setup.ps1")
+  $exFile = @("build.bat", "build.psake.ps1", "*.nuspec", ".gitignore", "*.config.ps1", "*.lis", "*.nupkg", "*.Tests.ps1", "*.html", "*Pester*", "*.Tests.Setup.ps1", "*.zip", "*.rar")
+  
+  <# Custom additions #>
+  #$exDir += @( ".Archive", ".SlickEdit")
+  #$exFile +=  @( "*.build", "*.tt", "*(Original)*.*", "*.credential", "*.ttinclude", ".dir", "*.TempPoint.*")
+  <# Customer additions #>
+  
   #Quote the elements
   $XD = ($exDir | %{ "`"$_`"" }) -join " "
   $XF = ($exFile | %{ "`"$_`"" }) -join " "
@@ -156,13 +162,13 @@ properties {
     ,"RoboSrc"
     ,"RoboTarget"
   )
-
+  [boolean]$script:isErrors = $false
   Write-Verbose "Verbose is ON"
   Write-Host $('{0} ==> {1}' -f '$VerbosePreference', $VerbosePreference)
 }
 
 task default -depends build
-task test-build -depends Show-Settings,             clean, create-dirs, git-history, set-version, compile
+task test-build -depends Show-Settings,      Clean-DryRun, create-dirs, git-history, set-version, compile
 task      build -depends Show-Settings, git-status, clean, create-dirs, git-history, set-version, compile, tag-version, distribute
 
 
@@ -204,9 +210,16 @@ task Compile -description "Build Deliverable zip file" -depends clean, create-di
     Copy-Item -path $i -Destination $(Join-Path $ProjBuildPath "README.${ProjectName}.md")
   }
   
+  Write-Host "Attempting Versioning Pl/Sql in $ProjBuildPath"
+    $plsqlVersionPath = Join-Path $ProjBuildPath "990_Version-pon.oms.sql"
+    if (Test-Path $plsqlVersionPath)
+    {
+      Ruusty.ReleaseUtilities\Set-Token -Path $plsqlVersionPath -key 'ProductVersion' -value $versionNum
+    }
+    
   Write-Host "Attempting Versioning Markdown in $ProjBuildPath"
   Get-ChildItem -Recurse -Path $ProjBuildPath -Filter "*.md" | %{
-    Ruusty.ReleaseUtilities\Set-VersionReadme $_.FullName  $version  $now
+    Ruusty.ReleaseUtilities\Set-VersionReadme -Path $_.FullName -version $version -datetime $now
   }
 
   Write-Host "Attempting to Convert Markdown to Html"
@@ -263,6 +276,10 @@ task clean -description "Remove all generated files" -depends clean-dirs {
   }
 }
 
+
+Task Clean-DryRun -description "Remove all generated files" -depends clean-dirs {
+  exec { & $GitExe "clean" -f --dry-run}
+}
 
 task set-version -description "Create the file containing the version" {
   $version = Ruusty.ReleaseUtilities\Get-Version -Major $ProjMajorMinor.Split(".")[0] -minor $ProjMajorMinor.Split(".")[1]
@@ -377,5 +394,4 @@ task help -Description "Helper to display task info" {
   Invoke-psake -buildfile $me -detaileddocs -nologo
   Invoke-psake -buildfile $me -docs -nologo
 }
-
 

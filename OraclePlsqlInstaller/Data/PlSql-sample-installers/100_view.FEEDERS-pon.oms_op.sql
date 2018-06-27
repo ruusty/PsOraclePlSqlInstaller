@@ -8,7 +8,7 @@ execute select USERNAME into :OWN from user_users;
 print OWN
 define l_owner
 
-EXECUTE alter session set current_schema = :OWN;
+alter session set current_schema = &l_owner.;
 
 
 alter session Set NLS_DATE_FORMAT='DD-MON-RRRR HH24:MI:SS';
