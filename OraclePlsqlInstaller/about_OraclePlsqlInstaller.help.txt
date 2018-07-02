@@ -2,35 +2,60 @@ TOPIC
     about_OraclePlsqlInstaller
     
 SHORT DESCRIPTION
-    Cmdlets used execute Pl/Sql files based on file naming coventions
+    Cmdlets to execute Pl/Sql files based on file naming coventions
            
 LONG DESCRIPTION
-    Cmdlets used execute Pl/Sql files based on file naming coventions
+    Cmdlets to execute Pl/Sql files based on file naming coventions
+
+    The Oracle passwords are stored in the Window Vault aka 'Control Panel\All Control Panel Items\Credential Manager'
                  
     The following cmdlets are included.
 
-        ConvertTo-SqlPlusCommands
-        Get-OracleSecret
-        ConvertTo-SqlPlusCommands.ps1
-        Get-BuildList
-        New-Fixtures
-        New-OracleRunFixture
-        Set-OracleUserPassword
-        Set-SdlcConnections
-        Show-OracleSecret
-        Test-OracleConnections
+        Start-ExeWithOutput         Runs the sqlplus.exe
+        Get-BuildList               Create a build list for the zip file
+        Get-SqlPlusCommands         Gets a list of pl/sql command lines based on a filename convention
+        New-Fixtures                Creates new install, build and psake scripts.
+        New-OracleRunFixture        Creates run.sql
+        Remove-OracleCredential     Removes the Oracle credentials from the Windows Vault based on SDLC and Oracle password file
+        Save-OracleCredentials      Saves the Oracle credentials into the Windows Vault from the Oracle password file
+        Set-SdlcConnections         Returns a hashtable of Oracle connections given a SDLC name
+        Show-OracleCredentials      Show the Oracle credentials from the Windows Vault
+        Test-OracleConnections      Test the connection strings can connect to the database and schema
 
-
+EXAMPLE
     Get all the cmdlets in  OraclePlsqlInstaller
     get-module "OraclePlsqlInstaller" | select -expand ExportedCommands
 
+EXAMPLE
     Get the help
-
     $(get-module OraclePlsqlInstaller).ExportedCommands.Keys |% {get-help $_}
 
-    The Date folder contains boilerplate and example files.    
+NOTES
+    The Data sub-folder contains boilerplate and example files.
 
-    SEE ALSO
 
+Windows Credential Manager
+    The Windows Credential Manager securely stores the Oracle Schema Passwords.
+
+    The Powershell Module BetterCredentials  stores and retrieves the passwords.
+
+    The Save-OracleCredentials, Remove-OracleCredential, Show-OracleCredentials
+    cmdlets are used to manage the import of passwords from
+    G:\MKT\DEPT\IT Spatial\OMS GIS\Support 'How To' Instruction\OMS-Oracle-Config\password-check\gis-oms-Oracle.xml
+    to the Windows Credential Manager
+
+    Save-OracleCredentials -sdlc dev -path "G:\MKT\DEPT\IT Spatial\OMS GIS\Support 'How To' Instruction\OMS-Oracle-Config\password-check\gis-oms-Oracle.xml"
+
+    Get-SqlPlusCommands retrieves the passwords from the Windows Credential Manager
+    and returns the SqlPlus.exe command line to run the pl/sql file including password.
+
+    Launch the Credential Manager
+    Win+R
+    c:\windows\system32\control.exe /name Microsoft.CredentialManager
+
+
+SEE ALSO
+    README.html
     BitBucket repository      : 
             https://bitbucket.org/ruusty/psoracleplsqlinstaller/src/master/
+

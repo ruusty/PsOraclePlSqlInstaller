@@ -20,6 +20,7 @@ function Test-OracleConnections
   )
   begin
   {
+    $ErrorActionPreference = 'Stop'
     #region Initialization code
     foreach ($Parameter in (Get-Command -Name $PSCmdlet.MyInvocation.InvocationName).Parameters)
     {
@@ -32,18 +33,18 @@ function Test-OracleConnections
   {
     #just want the unique username and tnsName combinations
     $sqlPlusCommand | %{
-      $id = $("{0}/{1}" -f $_.oraUser, $_.tnsName)
+      $id = $_.OraConnection
       if ($id -notin $doneconnections)
       {
         $doneconnections += $id
-        $cmd = $("echo.exit|{0} -L ""{1}/{2}@{3}""" -f $sqlplusExe, $_.oraUser, $_.Orapassword, $_.tnsName)
-        #Write-Host "Testing : cmd.exe /c $_"
+        $cmd = $("echo.exit|{0} -L ""{1}""" -f $sqlplusExe, $id)
+        Write-Verbose "Testing : $id"
         If ($PSCmdlet.ShouldProcess($("{0}" -f $cmd)))
         {
           & cmd.exe /c ""$cmd"" | out-default
           if ($lastexitcode -ne 0)
           {
-            throw ("Exec: " + "Exited with a failure of $lastexitcode running: cmd.exe /c $cmd")
+            Write-Error -Message "$id failed with $lastexitcode" -Category AuthenticationError
           }
         }
       }

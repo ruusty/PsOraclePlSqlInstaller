@@ -1,7 +1,7 @@
 ﻿function Get-SqlPlusCommands
 <#
   .SYNOPSIS
-    Get Sql plus commands
+    Get Sql Plus commands
   
   .DESCRIPTION
     Get Sql plus commands to execute the files matching $splSpec in $ directory
@@ -31,10 +31,11 @@
     $netServiceNames = @{ pon = "PONX.world"; onc = "ONCX.world" }
   )
   #region Initialization code
+  $ErrorActionPreference = 'Stop'
   foreach ($Parameter in (Get-Command -Name $PSCmdlet.MyInvocation.InvocationName).Parameters)
   {
     $("Attempting " + $PSCmdlet.MyInvocation.InvocationName), $(Get-Variable -Name $Parameter.Values.Name -ErrorAction SilentlyContinue) | Out-String | write-verbose
   }
   #endregion Initialization code
-  ConvertTo-SqlPlusCommands @PsBoundParameters | Set-OracleUserPassword | Set-CommandLine
+  ConvertTo-SqlPlusCommands @PsBoundParameters | Get-OraclePassword | Set-CommandLine
 }

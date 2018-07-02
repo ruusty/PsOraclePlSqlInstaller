@@ -67,11 +67,10 @@ Describe "$ModuleName" {
   $sdlc = "DEV"
   $IsoDateTimeStr= "yyyy-MM-ddTHH-mm-ss"
   $initArgs = @{
-    directory        = $(Join-Path $PSScriptRoot "Data")
+    directory        = $(Join-Path $PSScriptRoot "Data01")
     sqlSpec          = @('[0-9_][0-9_][0-9_]_*-*.sql');
     logFileSuffix    = $IsoDateTimeStr;
     netServiceNames  = Set-SdlcConnections $sdlc.ToUpper();
-    #verbose          = $boolVerbose;
   }
   
   Context "Execution"  {
@@ -166,7 +165,7 @@ Describe "Manifest" {
   
   
   It "Should export public script functions" {
-    $numFunctions = 10
+    $numFunctions = 9
     $ExportedCommands = $(get-module $ModuleName).ExportedCommands
     $Functions = $ExportedCommands.GetEnumerator() | % { $_.value } | Where-Object { ($_.CommandType -eq 'Function') }
     $FunctionCount = ($Functions).count

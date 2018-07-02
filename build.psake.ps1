@@ -173,6 +173,7 @@ properties {
 
   Write-Verbose "Verbose is ON"
   Write-Host $('{0} ==> {1}' -f '$VerbosePreference', $VerbosePreference)
+  $ProjMajorMinor="4.4"
 }
 
 task default -depends build
@@ -211,13 +212,18 @@ task Compile -description "Build Deliverable zip file" -depends clean, create-di
     Copy-Item -path $i -Destination "$ProjBuildPath\OraclePlsqlInstaller"
   }
 
-  Write-Host "Attempting Versioning"
-  $MdPathSpec = $(Join-Path -Path $ProjBuildPath -ChildPath "*.md")
-  Write-Host "Attempting Versioning Markdown $MdPathSpec in $ProjBuildPath"
-  Get-ChildItem -Recurse -Path $MdPathSpec | %{
+
+  Write-Host "Attempting Versioning Markdown in $ProjBuildPath"
+  Get-ChildItem -Recurse -Path $ProjBuildPath -Filter "*.md" | %{
     Ruusty.ReleaseUtilities\Set-VersionReadme $_.FullName  $version  $now
   }
-
+  
+  Write-Host "Attempting Versioning Module in $ProjBuildPath"
+  Get-ChildItem -Recurse -Path $ProjBuildPath -Filter "*.psd1" | %{
+    Ruusty.ReleaseUtilities\Set-VersionModule -path $_.FullName  -version $version -Verbose
+  }
+  
+  
   Write-Host "Attempting to Convert Markdown to Html"
   md2html\Convert-Markdown2Html -path $ProjBuildPath -recurse -verbose
 
@@ -316,11 +322,11 @@ task create-dirs {
 task clean -description "Remove all generated files" -depends clean-dirs {
   if ($isMaster)
   {
-    exec { & $GitExe "clean" -X -f }
+    exec { & $GitExe "clean" -f }
   }
   else
   {
-    exec { & $GitExe "clean" -X -f --dry-run }
+    exec { & $GitExe "clean" -f --dry-run }
   }
 }
 

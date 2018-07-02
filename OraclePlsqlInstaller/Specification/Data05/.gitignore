@@ -1,0 +1,4 @@
+/build.psake.ps1
+/install.bat
+/run.sql
+/sqlplus.psake.ps1

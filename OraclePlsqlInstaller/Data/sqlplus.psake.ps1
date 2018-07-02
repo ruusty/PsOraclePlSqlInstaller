@@ -1,22 +1,18 @@
 <#
-.SYNOPSIS
+  .SYNOPSIS
+    psake script for executing Pl/Sql files with sqlplus.exe
 
-psake script for executing Pl/Sql files with sqlplus.exe
+  .DESCRIPTION
+    Executes sqlplus.exe over a collection of pl/sql files into the target SDLC Environment using Module OraclePlsqlInstaller
 
-.DESCRIPTION
+  .EXAMPLE
+    @psake sqlplus.psake.ps1 -docs
 
-Executes sqlplus.exe over a collection of pl/sql files into the target SDLC Environment using Module OraclePlsqlInstaller
+   Discover the available targets
 
-.EXAMPLE
-@psake sqlplus.psake.ps1 -docs
-
-Discover the available targets
-
-.EXAMPLE
-@set buildfile=sqlplus.psake.ps1
-call psake "%buildfile%" -properties "@{cfg_sqlSpec=@('[0-9_][0-9_][0-9_]_*-*.sql');verbose=$false}" -parameters "@{sdlc='%sdlc%';}" %1
-Runs the Pl/sql files in the current directory matching the pattern
-
+  .EXAMPLE
+    call psake sqlplus.psake.ps1 -properties "@{cfg_sqlSpec=@('[0-9_][0-9_][0-9_]_*-*.sql')}" -parameters "@{VerbosePreference='SilentlyContinue';DebugPreference='SilentlyContinue';sdlc='%sdlc%';JobName='%JobName%'}" %1
+    Runs the Pl/sql files in the current directory matching the pattern
 
 
 .NOTES
@@ -25,11 +21,8 @@ Requires Modules
 
   psake
   OraclePlsqlInstaller
-
-https://github.com/psake/psake
-
+  BetterCredentials
 #>
-#$VerbosePreference= 'Continue'
 Framework '4.0'
 Set-StrictMode -Version 4
 $me = $MyInvocation.MyCommand.Definition
@@ -68,7 +61,7 @@ Properties {
      ,"sqlplusExe"
      ,"zipArgs"
   )
-  $verbose = $false;
+  $verbose = ($VerbosePreference -eq 'Continue');
   $whatif = $false;
   $now = [System.DateTime]::Now
   write-verbose($("CurrentLocation={0}" -f $executionContext.SessionState.Path.CurrentLocation))
@@ -100,9 +93,7 @@ Task Show-Settings -description "Display the psake configuration properties vari
 
 
 Task Show-Passwords -description "Display the passwords in the credential files" -depends init {
-  Write-Verbose("Verbose is on")
-  $credFiles = $script:sqlCommands | sort -Property credentialFileName -Unique |% { $_.credentialFileName }
-  @($credFiles).GetEnumerator() | Show-OracleSecret  | Out-String | write-host
+  Show-OracleCredentials -sdlc $sdlc
 }
 
 
@@ -125,10 +116,10 @@ Task Init -Description "Initialize the environment based on the properties" {
     directory = $PSScriptRoot
     sqlSpec = $cfg_sqlSpec;
     logFileSuffix = $IsoDateTimeStr;
-    netServiceNames = Set-SdlcConnections $sdlc.ToUpper();
+    netServiceNames = OraclePlsqlInstaller\Set-SdlcConnections -sdlc $sdlc;
     verbose = $verbose;
   }
-  $script:sqlCommands = Get-SqlPlusCommands @initArgs
+  $script:sqlCommands = OraclePlsqlInstaller\Get-SqlPlusCommands @initArgs
   $script:sqlCommands | Out-String | write-verbose
   "Done Initialization!"
 }
@@ -136,7 +127,7 @@ Task Init -Description "Initialize the environment based on the properties" {
 
 Task Test-Connect -depends Init -description "Test username and password connections"{
   $verbose = $true;
-  $script:sqlCommands | Test-OracleConnections -sqlplusExe "sqlplus.exe" -verbose:$verbose -whatif:$whatif
+  $script:sqlCommands | OraclePlsqlInstaller\Test-OracleConnections -sqlplusExe "sqlplus.exe" -verbose:$verbose -whatif:$whatif
 }
 
 
@@ -154,9 +145,9 @@ Task Invoke-Sqlplus -depends Init -Description "Executes sqlplus.exe, Spool file
       OraclePlsqlInstaller\Start-ExeWithOutput -FilePath $sqlplusExe -ArgumentList $_.sqlplusArgs -verbose:$verbose -whatif:$whatif
     }
     catch [Exception] {
+      $errMsg = $_ | fl * -Force | Out-String
       Stop-Transcript -ErrorAction SilentlyContinue
       OraclePlsqlInstaller\Start-ExeWithOutput -FilePath $zipExe -ArgumentList $zipArgs -verbose:$verbose -whatif:$whatif
-      $errMsg = $_ | fl * -Force | Out-String
       Write-Host $errMsg
       throw
     }
@@ -233,8 +224,10 @@ Task Show-SettingDetails -Description "Display detailed configuration variables,
  Get-Variable | format-table -Wrap | Out-Host
 }
 
-Task Get-DeliverableList -description "Create a list of files that should be in the zip file"{
-  OraclePlsqlInstaller\Get-BuildList -BuildPath "Specification.build"
+Task Get-DeliverableList -description "Create a list of files that should be in the zip file" {
+  $ProjectName = [System.IO.Path]::GetFileName($PSScriptRoot)
+  $ProjPackageListPath = Join-Path $PSScriptRoot "${ProjectName}.lis"
+  OraclePlsqlInstaller\Get-BuildList  | Sort-Object -Unique | Set-Content -Path $ProjPackageListPath
 }
 
 Task Accept -Description "Visual confirmation that we are hitting the correct configuration "-depends init{

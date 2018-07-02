@@ -1,0 +1,1 @@
+Invoke-psake build.psake.ps1 -parameters @{VerbosePreference = 'Continue'; DebugPreference = 'SilentlyContinue' } -properties @{ verbose = $False;}

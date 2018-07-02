@@ -4,6 +4,7 @@ OraclePlsqlInstaller\OraclePlsqlInstaller.psm1
 OraclePlsqlInstaller\Data\*
 OraclePlsqlInstaller\PSOraclePlSqlInstaller.git_history.txt
 OraclePlsqlInstaller\Public\*
+OraclePlsqlInstaller\Private\*
 OraclePlsqlInstaller\README.html
 OraclePlsqlInstaller\README.md
 
