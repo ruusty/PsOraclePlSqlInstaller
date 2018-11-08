@@ -92,7 +92,7 @@ OraConnection      : "/@ONCD.world"
   }
   #endregion Initialization code
 
-  $sqlfiles = @(Resolve-Path -Path $sqlPathSpec | sort-object -Unique)
+  $sqlfiles = @(Resolve-Path -Path $sqlPathSpec -ErrorAction SilentlyContinue| sort-object -Unique)
   $sqlfiles.GetEnumerator() | Sort | % {
     write-verbose $("Processing {0}" -f $_) #TypeName: System.Management.Automation.PathInfo
     $fname = [System.IO.Path]::GetFileName($_)

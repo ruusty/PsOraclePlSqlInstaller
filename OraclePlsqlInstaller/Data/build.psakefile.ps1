@@ -1,10 +1,13 @@
 <#
 .SYNOPSIS
- This is a psake script
 
-.DESCRIPTION
-  Build a deliveable and packaging with Chocolatey.
-  $ProjectName = [System.IO.Path]::GetFileName($PSScriptRoot)
+psake script to build a deliverable versioned zip file of Pl/Sql scripts.
+
+.NOTES
+The Project Name is the current directory name
+Copies the deliverable to the Build Folder
+Creates a versioned zip file in the Dist Folder
+Copies files in the Dist Folder to Delivery
 
 #>
 Framework '4.0'
@@ -16,7 +19,8 @@ FormatTaskName "`r`n[------{0}------]`r`n"
 
 Import-Module Ruusty.ReleaseUtilities
 import-module md2html
-<#
+
+ <#
   .SYNOPSIS
     Get a setting from xml
   
@@ -48,20 +52,22 @@ function Get-SettingFromXML
   # Catch all other exceptions thrown by one of those commands
   catch
   {
-    Throw "XML error"
+   Throw "XML error"
   }
 }
 
-properties {
-  Write-Host "Verbose is ON"
-  Write-Host $('{0} ==> {1}' -f '$VerbosePreference', $VerbosePreference)
-  Write-Host $('{0} ==> {1}' -f '$DebugPreference', $DebugPreference)
 
+
+properties {
+  Write-Verbose "Verbose is ON"
+  $IsVerbose = ($VerbosePreference -eq 'Continue')
   $script:config_vars = @()
   # Add variable names to $config_vars to display their values
   $script:config_vars += @(
       "GlobalPropertiesName"
      ,"GlobalPropertiesPath"
+     ,"VerbosePreference"
+     ,"DebugPreference"
   )
   $whatif = $false;
   $now = [System.DateTime]::Now
@@ -69,10 +75,11 @@ properties {
   $isMaster = if ($Branch -eq 'master') {$true} else {$false}
   write-debug($("CurrentLocation={0}" -f $executionContext.SessionState.Path.CurrentLocation))
   $GlobalPropertiesName=$("GisOms.Chocolatey.properties.{0}.xml" -f $env:COMPUTERNAME)
-  $GlobalPropertiesPath = Ruusty.ReleaseUtilities\Find-FileUp "GisOms.Chocolatey.properties.${env:COMPUTERNAME}.xml" -verbose
+  $GlobalPropertiesPath = Ruusty.ReleaseUtilities\Find-FileUp "GisOms.Chocolatey.properties.${env:COMPUTERNAME}.xml" 
   Write-Host $('$GlobalPropertiesPath:{0}' -f $GlobalPropertiesPath)
   $GlobalPropertiesXML = New-Object XML
   $GlobalPropertiesXML.Load($GlobalPropertiesPath)
+  
   $script:config_vars += @(
   "whatif"
   ,"now"
@@ -83,23 +90,17 @@ properties {
   $GitExe = Get-SettingFromXML -xmldoc $GlobalPropertiesXML -xpath "/project/property[@name='git.exe']"
   $7zipExe = Get-SettingFromXML -xmldoc $GlobalPropertiesXML -xpath "/project/property[@name='tools.7zip']"
   $ProjMajorMinor = Get-SettingFromXML -xmldoc $GlobalPropertiesXML -xpath "/project/property[@name='GisOms.release.MajorMinor']"
-  $CoreDeliveryDirectory = Get-SettingFromXML -xmldoc $GlobalPropertiesXML -xpath "/project/property[@name='core.delivery.dir']"
+  $CoreDeliveryDirectory= Get-SettingFromXML -xmldoc $GlobalPropertiesXML -xpath "/project/property[@name='core.delivery.dir']"
   $CoreReleaseStartDate = Get-SettingFromXML -xmldoc $GlobalPropertiesXML -xpath "/project/property[@name='GisOms.release.StartDate']"
-  $ChocoExe = Get-SettingFromXML -xmldoc $GlobalPropertiesXML -xpath "/project/property[@name='tools.choco']"
-  $CoreChocoFeed = Get-SettingFromXML -xmldoc $GlobalPropertiesXML -xpath "/project/property[@name='core.delivery.chocoFeed.dir']"
- 
 
   $script:config_vars += @(
   ,"GitExe"
   ,"7zipExe"
-  ,"ChocoExe"
   ,"ProjMajorMinor"
   ,"CoreDeliveryDirectory"
-  ,"CoreChocoFeed"
   ,"CoreReleaseStartDate"
-  ,"SpatialGitHubPath"
     )
-
+  
   $ProjectName = [System.IO.Path]::GetFileName($PSScriptRoot)
   $ProjTopdir = $PSScriptRoot
   $ProjBuildPath = Join-Path $ProjTopdir "Build"
@@ -114,54 +115,45 @@ properties {
     )
 
   $ProjPackageListPath = Join-Path $ProjTopdir "${ProjectName}.lis"
-  $ProjPackageZipPath = Join-Path $ProjDistPath "${ProjectName}.zip"
-  $zipArgs = 'a -bb2 -tzip "{0}" -ir0@"{1}"' -f $ProjPackageZipPath, $ProjPackageListPath # Get paths from file
+  $ProjPackageZipPath = Join-Path $ProjDistPath  '${ProjectName}.${versionNum}.zip' #CONFIGURE: Expand dynamically versionNum not set
+  $ProjDeliveryPath = Join-Path $PSScriptRoot "..\..\Deploy" #
+  $zipArgs = 'a -bb2 -tzip "{0}" -ir0@"{1}"' -f $ProjPackageZipPath, $ProjPackageListPath         #CONFIGURE: Get paths from file
   
   $script:config_vars += @(
     "ProjPackageListPath"
      ,"ProjPackageZipPath"
+     ,"ProjDeliveryPath"
+     ,"ProjDeliveryPath"
      ,"zipArgs"
   )
   
   $ProjHistoryPath = Join-Path $ProjTopdir "${ProjectName}.git_history.txt"
   $ProjVersionPath = Join-Path $ProjTopdir "${ProjectName}.Build.Number"
   $ProjReadmePath   = Join-Path $ProjTopdir "README.md"
-  $ProjNuspecName = "${ProjectName}"
-  $ProjNuspec = "${ProjNuspecName}.nuspec"
-  $ProjNuspecPath = Join-Path $ProjTopdir "${ProjNuspecName}.nuspec"
-  $ProjNuspecPkgVersionPath = Join-Path $ProjTopdir  '${ProjNuspecName}.${versionNum}.nupkg'
   $ProjHistorySinceDate ="2015-05-01"
   $script:config_vars += @(
     "ProjHistoryPath"
      ,"ProjVersionPath"
-     ,"ProjNuspecName"
-     ,"ProjNuspecPath"
-     ,"ProjNuspecPkgVersionPath"
      ,"ProjHistorySinceDate"
-     ,"ProjPackageZipVersionPath"
-     ,"ProjNuspec"
      ,"ProjReadmePath"
   )
-  
-  Set-Variable -Name "sdlc" -Description "System Development Lifecycle Environment" -Value "UNKNOWN"
-  $sdlcs = @('prod', 'uat','test','dev') #nupkg specific to a SDLC
-  $sdlcs = @('ALL')                      #nupkg does all SDLCs
-
-    $script:config_vars += @(
-     ,"sdlc"
-    ,"sdlcs"
-  )
-
+    
   <# Robocopy settings #>
   <# Tweek exDir exFile to define files to include in zip #>
-  $exDir = @("$ProjTopdir\src\.TEMPLATE", "Build", "Dist", "tools", ".git", "specs", "Specification", "wrk", "work")
-  $exFile = @("*.nuspec", ".gitignore", "*.config.ps1", "*.lis", "*.nupkg", "*.Tests.ps1", "*.html", "*Pester*", "*.Tests.Setup.ps1")
+  $exDir = @( "Build", "Dist", "tools", ".git", "specs", "Specification", "wrk", "work")
+  $exFile = @("build.bat", "build.psake.ps1", "*.nuspec", ".gitignore", "*.config.ps1", "*.lis", "*.nupkg", "*.Tests.ps1", "*.html", "*Pester*", "*.Tests.Setup.ps1", "*.zip", "*.rar")
+  
+  <# Custom additions #>
+  #$exDir += @( ".Archive", ".SlickEdit")
+  #$exFile +=  @( "*.build", "*.tt", "*(Original)*.*", "*.credential", "*.ttinclude", ".dir", "*.TempPoint.*")
+  <# Customer additions #>
+  
   #Quote the elements
   $XD = ($exDir | %{ "`"$_`"" }) -join " "
   $XF = ($exFile | %{ "`"$_`"" }) -join " "
   # Quote the RoboCopy Source and Target folders
-  $RoboSrc = '"{0}\OraclePlsqlInstaller"' -f $ProjTopdir
-  $RoboTarget = '"{0}\OraclePlsqlInstaller"' -f $ProjBuildPath
+  $RoboSrc = '"{0}"' -f $ProjTopdir
+  $RoboTarget = '"{0}"' -f $ProjBuildPath
   $script:config_vars += @(
     "exDir"
     ,"exFile"
@@ -170,23 +162,21 @@ properties {
     ,"RoboSrc"
     ,"RoboTarget"
   )
-
-  Write-Verbose "Verbose is ON"
+  [boolean]$script:isErrors = $false
   Write-Host $('{0} ==> {1}' -f '$VerbosePreference', $VerbosePreference)
-  $ProjMajorMinor="4.4"
 }
 
 task default -depends build
-task test-build -depends Show-Settings, clean,             create-dirs, git-history, set-version, compile, compile-nupkg
-task      build -depends Show-Settings, git-status, clean, create-dirs, git-history, set-version, compile, compile-nupkg, tag-version, distribute
+task test-build -depends Show-Settings,      Clean-DryRun, create-dirs, git-history, set-version, compile
+task      build -depends Show-Settings, git-status, clean, create-dirs, git-history, set-version, compile, tag-version, distribute
 
 
 
-task Compile -description "Build Deliverable zip file" -depends clean, create-dirs, set-version   {
+
+task Compile -description "Build Deliverable zip file" -depends clean, create-dirs, set-version{
   $versionNum = Get-Content $ProjVersionPath
   $version = [system.Version]::Parse($versionNum)
 
-  Write-Verbose "Verbose is on"
   Write-Host "Attempting to get source files"
 
   $RoboArgs = @($RoboSrc, $RoboTarget, '/S', '/XD', $XD, '/XF', $XF)
@@ -206,104 +196,58 @@ task Compile -description "Build Deliverable zip file" -depends clean, create-di
   }
 
   #Put the History and version in the build folder.
-
-  foreach ($i  in @($ProjHistoryPath, $ProjVersionPath,$ProjReadmePath))
+  Write-Host "Attempting get on $ProjHistoryPath, $ProjVersionPath"
+  foreach ($i  in @($ProjHistoryPath, $ProjVersionPath))
   {
-    Copy-Item -path $i -Destination "$ProjBuildPath\OraclePlsqlInstaller"
+    Copy-Item -path $i -Destination $ProjBuildPath
   }
-
-
+  #rename README.md to 
+  Write-Host "Attempting get on $ProjReadmePath"
+  foreach ($i  in @( $ProjReadmePath))
+  {
+    Copy-Item -path $i -Destination $(Join-Path $ProjBuildPath "README.${ProjectName}.md")
+  }
+  
+  Write-Host "Attempting Versioning Pl/Sql in $ProjBuildPath"
+    $plsqlVersionPath = Join-Path $ProjBuildPath "990_Version-pon.oms.sql"
+    if (Test-Path $plsqlVersionPath)
+    {
+      Ruusty.ReleaseUtilities\Set-Token -Path $plsqlVersionPath -key 'ProductVersion' -value $versionNum
+    }
+    
   Write-Host "Attempting Versioning Markdown in $ProjBuildPath"
   Get-ChildItem -Recurse -Path $ProjBuildPath -Filter "*.md" | %{
-    Ruusty.ReleaseUtilities\Set-VersionReadme $_.FullName  $version  $now
+    Ruusty.ReleaseUtilities\Set-VersionReadme -Path $_.FullName -version $version -datetime $now
   }
-  
-  Write-Host "Attempting Versioning Module in $ProjBuildPath"
-  Get-ChildItem -Recurse -Path $ProjBuildPath -Filter "*.psd1" | %{
-    Ruusty.ReleaseUtilities\Set-VersionModule -path $_.FullName  -version $version -Verbose
-  }
-  
-  
+
   Write-Host "Attempting to Convert Markdown to Html"
-  md2html\Convert-Markdown2Html -path $ProjBuildPath -recurse -verbose
-
-  Write-Host "Attempting to create zip file with '$zipArgs'"
-  if (Test-Path -Path $ProjPackageZipPath -Type Leaf){ Remove-Item -path $ProjPackageZipPath}
+  md2html\Convert-Markdown2Html -path $ProjBuildPath -recurse -verbose:$IsVerbose
+  
+  $zipArgs = $ExecutionContext.InvokeCommand.ExpandString($zipArgs)
+  Write-Host "Attempting to create zip file with: $zipArgs"
+  
+ # if (Test-Path -Path $ProjPackageZipPath -Type Leaf){ Remove-Item -path $ProjPackageZipPath}
   Ruusty.ReleaseUtilities\start-exe $7zipExe -ArgumentList $zipArgs -workingdirectory $ProjBuildPath
-  #Copy README and history
-  #Copy-Item -Path $(Join-Path $ProjBuildPath "README.html") -Destination $ProjDistPath
-  #Copy-Item -Path $ProjHistoryPath -Destination $ProjDistPath
+  
 }
 
 
-Task Compile-nupkg -description "Compile Chocolatey nupkg from nuspec" -depends compile-nupkg-single, compile-nupkg-multi {
-  Write-Host -ForegroundColor Magenta "Done compiling Chocolatey packages"
-}
-
-
-task Compile-nupkg-single -description "Compile single Chocolatey nupkg from nuspec" -PreCondition { ($sdlcs.Count -eq 1) }  {
-  $versionNum = Get-Content $ProjVersionPath
-  Write-Host $("Compiling {0}" -f $ProjNuspecPath)
-  exec { & $ChocoExe pack $ProjNuspecPath --version $versionNum }
-}
-
-
-task Compile-nupkg-multi -description "Compile Multiple Chocolatey sdlc nupkg from nuspec" -PreCondition { ($sdlcs.Count -gt 1)} {
-  $versionNum = Get-Content $ProjVersionPath
-  Write-Host $("Compiling {0}" -f $ProjNuspecPath)
-  foreach ($sdlc in $sdlcs)
-  {
-    Write-Host "Attempting to get Chocolatey Install Scripts for $sdlc"
-    Copy-Item -path "tools" -Destination $ProjDistPath -Recurse -force
-    Ruusty.ReleaseUtilities\Set-Token -Path $(join-path $ProjDistPath "tools/properties.ps1") -key "SDLC" -value $sdlc
-
-    Write-Host "Attempting to get *.nuspec  for $sdlc"
-    Copy-Item -path $ProjNuspecPath -Destination $ProjDistPath
-    Ruusty.ReleaseUtilities\Set-Token -Path $(join-path $ProjDistPath $ProjNuspec) -key "SDLC" -value $sdlc
-    Ruusty.ReleaseUtilities\Set-Token -Path $(join-path $ProjDistPath $ProjNuspec) -key "SDLC_SUFFIX" -value "-${sdlc}"
-
-    exec { & $ChocoExe pack $(join-path $ProjDistPath $ProjNuspec) --version $versionNum --outputdirectory $ProjDistPath }
-  }
-}
-
-
-task Distribute -description "Distribute the deliverables to Deliver" -PreCondition { ($isMaster) } -depends distributeTo-Delivery, distribute-nupkg-single, distribute-nupkg-multi {
+Task Distribute -description "Distribute the deliverables to Deliver" -PreCondition { ($isMaster) } -depends DistributeTo-Deploy {
   Write-Host -ForegroundColor Magenta "Done distributing deliverables"
 }
 
 
-task DistributeTo-Delivery -description "Copy Deliverables to the Public Delivery Share" {
+task DistributeTo-Deploy -description "Copy Deliverables to the Deploy folder" {
   $versionNum = Get-Content $ProjVersionPath
-#  $DeliveryCopyArgs = @{
-#    path   = @("$ProjDistPath/*.zip", "$ProjDistPath/README.*", "$ProjDistPath/*.nupkg","$ProjDistPath/tools/*.zip",$ProjHistoryPath)
-#    destination = $ExecutionContext.InvokeCommand.ExpandString($ProjDeliveryPath)
-#  }
-#  Write-Host $("Attempting to copy deliverables to {0}" -f $DeliveryCopyArgs.Destination)
-#  if (!(Test-Path $DeliveryCopyArgs.Destination)) { mkdir -Path $DeliveryCopyArgs.Destination }
-#  Copy-Item @DeliveryCopyArgs
-#  dir $DeliveryCopyArgs.destination | out-string | write-host
-}
-
-
-task Distribute-nupkg-single -description "Push nupkg to Chocolatey Feed" -PreCondition { ($sdlcs.Count -eq 1) } {
-  $versionNum = Get-Content $ProjVersionPath
-  $nupkg = $ExecutionContext.InvokeCommand.ExpandString($ProjNuspecPkgVersionPath)
-  Write-Host $("Pushing {0}" -f $nupkg)
-  exec { & $ChocoExe  push $nupkg -s $CoreChocoFeed }
-}
-
-
-task Distribute-nupkg-multi -description "Push multiple sdlc nupkg to Chocolatey Feed" -PreCondition { ($sdlcs.Count -gt 1) } {
-  $versionNum = Get-Content $ProjVersionPath
-  Push-Location $ProjDistPath
-  foreach ($sdlc in $sdlcs)
-  {
-    $LocalNuspecPkgVersionName = '${ProjNuspecName}-${sdlc}.${versionNum}.nupkg'
-    $nupkg = $ExecutionContext.InvokeCommand.ExpandString($LocalNuspecPkgVersionName)
-    Write-Host $("Pushing {0}" -f $nupkg)
-    exec { & $ChocoExe  push $nupkg -s $CoreChocoFeed }
+  $DeliveryCopyArgs = @{
+    path   = @("$ProjDistPath/*.zip" )
+    destination = $ExecutionContext.InvokeCommand.ExpandString($ProjDeliveryPath)
+    Verbose = $IsVerbose
   }
-  Pop-Location
+  Write-Host $("Attempting to copy deliverables to {0}" -f $DeliveryCopyArgs.Destination)
+  if (!(Test-Path $DeliveryCopyArgs.Destination)) { mkdir -Path $DeliveryCopyArgs.Destination }
+  Copy-Item @DeliveryCopyArgs
+  dir $DeliveryCopyArgs.destination | out-string | write-host
 }
 
 
@@ -331,17 +275,14 @@ task clean -description "Remove all generated files" -depends clean-dirs {
 }
 
 
+Task Clean-DryRun -description "Remove all generated files" -depends clean-dirs {
+  exec { & $GitExe "clean" -f --dry-run}
+}
+
 task set-version -description "Create the file containing the version" {
   $version = Ruusty.ReleaseUtilities\Get-Version -Major $ProjMajorMinor.Split(".")[0] -minor $ProjMajorMinor.Split(".")[1]
   Set-Content $ProjVersionPath $version.ToString()
   Write-Host $("Version:{0}" -f $(Get-Content $ProjVersionPath))
-}
-
-
-task set-versionAssembly -description "Version the AssemblyInfo.cs" {
-  $versionNum = Get-Content $ProjVersionPath
-  $version = [system.Version]::Parse($versionNum)
-  Ruusty.ReleaseUtilities\Set-VersionAssembly "CmdletRuusty\Properties\AssemblyInfo.cs" $version
 }
 
 
@@ -390,16 +331,6 @@ task Show-deliverable-Deliver -description "Show location of deliverables and op
 }
 
 
-Task Show-Choco-Deliverable -description "Show the Chocolatey nupkg packages/s in the chocolatey Feed (Assumes hosted on a UNC path)"{
-  $versionNum = Get-Content $ProjVersionPath
-  $LocalNuspecPkgVersionName = $ExecutionContext.InvokeCommand.ExpandString('${ProjNuspecName}*.${versionNum}.nupkg')
-  $Spec = Join-Path -path $CoreChocoFeed -childpath $LocalNuspecPkgVersionName
-  Write-Host $('Chocolatey goodness here : {0}' -f $Spec)
-  dir $Spec | out-string | write-host
-  (resolve-path $Spec).ProviderPath | out-string | write-host
-}
-
-
 task Show-Settings -description "Display the psake configuration properties variables"   {
   Write-Verbose("Verbose is on")
   Get-Variable -name $script:config_vars -ea Continue | sort -Property name -CaseSensitive -unique | Format-Table -property name, value -autosize | Out-String -Width 2000 | Out-Host
@@ -407,7 +338,6 @@ task Show-Settings -description "Display the psake configuration properties vari
 
 
 task Show-SettingsVerbose -description "Display the psake configuration properties variables as a list"   {
-  Write-Verbose("Verbose is on")
   Get-Variable -name $script:config_vars -ea Continue | sort -Property name -CaseSensitive -unique | format-list -Expand CoreOnly -property name, value | Out-String -Width 2000 | Out-Host
 }
 
@@ -453,33 +383,9 @@ task set-buildList -description "Generate the list of files to go in the zip del
   Write-Host -ForegroundColor Magenta "Done Creating : $ProjPackageListPath"
 }
 
-task ? -Description "Helper to display task info" -depends help {
-}
 
-
-task help -Description "Helper to display task info" {
+task help -Description "Helper to display task info" -alias "?" {
   Invoke-psake -buildfile $me -detaileddocs -nologo
   Invoke-psake -buildfile $me -docs -nologo
 }
 
-
-<#
-task Test -description "Pester tests"{
-  $verbose = $false
-  $result = invoke-pester -Script @{ Path = '.\src\SpaOmsGis.Tests.ps1'; Parameters = @{ Verbose = $false } } -OutputFile ".\src\SpaOmsGis.Tests.TestResults.xml" -PassThru -Verbose:$verbose
-  Write-Host $result.FailedCount
-  if ($result.FailedCount -gt 0)
-  {
-    Write-Error -Message $("Pester failed {0} tests" -f $result.FailedCount)
-  }
-}
-#>
-
-
-#Task getDependencies -description "Get shared dependencies from Git" {
-#  #region  Get the file the Spatial_GitHub
-#  Write-Host "Attempting to get Get-GisOmsSdlc.ps1"
-#  GisOmsUtils\Get-GitFile -gitRemote $(join-path -path $SpatialGitHubPath -child "ChocoPkgContents/PSGisOmsRelease.git" ) -gitBranch "master" -gitFilePath "GisOmsRelease\Public\Get-GisOmsSdlc.ps1" -destPath $ProjBuildPath -verbose
-#  Move-Item $(Join-Path $ProjBuildPath "GisOmsRelease\Public\Get-GisOmsSdlc.ps1") $(Join-Path $ProjTopdir "tools/Get-GisOmsSdlc.ps1") -Force
-#  remove-item   $(Join-Path $ProjBuildPath 'GisOmsRelease') -Recurse
-#}

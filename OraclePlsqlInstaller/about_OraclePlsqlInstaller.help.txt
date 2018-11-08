@@ -13,6 +13,7 @@ LONG DESCRIPTION
 
         Start-ExeWithOutput         Runs the sqlplus.exe
         Get-BuildList               Create a build list for the zip file
+        Get-OracleCredential        Get the credential for an Oracle Username and Oracle Net Service Name
         Get-SqlPlusCommands         Gets a list of pl/sql command lines based on a filename convention
         New-Fixtures                Creates new install, build and psake scripts.
         New-OracleRunFixture        Creates run.sql

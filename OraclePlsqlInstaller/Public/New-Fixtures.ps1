@@ -16,7 +16,7 @@
     Only create fixtures matching the filter wildcards
   
   .EXAMPLE
-    New-Fixtures -whatif -filter build.bat -force
+    New-Fixtures -whatif -filter build.ps1 -force
 
   .EXAMPLE
     New-Fixtures -whatif
