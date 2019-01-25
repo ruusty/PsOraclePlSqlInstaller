@@ -42,7 +42,6 @@ Properties {
   # sdlc must be set via -parameters
   Assert -conditionToCheck { $JobName -ne $null } -failureMessage "$JobName must be set"
   Assert -conditionToCheck {$SDLC -ne $null } -failureMessage "$SDLC must be set"
-
   $script:config_vars = @()
   # Add variable names to $config_vars to display their values
   $script:config_vars += @(
@@ -168,8 +167,8 @@ Task Stop-Logging -description "Stop the logging" {
     #Replace Network Name with password
     $bak = [System.IO.Path]::ChangeExtension($PoshLogPathAbs, "bak")
     $UserName = $(([System.Security.Principal.WindowsIdentity]::GetCurrent().Name -split '\\')[1])
-    $netServiceNames = OraclePlsqlInstaller\Set-SdlcConnections -sdlc $sdlc;
-    $cred = GetOracleCredential -Username $UserName -net_service_name $($netServiceNames.pon)
+    $netServiceName = (OraclePlsqlInstaller\Set-SdlcConnections -sdlc $sdlc).pon;
+    $cred = OraclePlsqlInstaller\Get-OracleCredential -Username $UserName -netServiceName $netServiceName
     $secret = $cred.GetNetworkCredential().Password
     if (Test-Path -path $PoshLogPathAbs)
     {
@@ -223,7 +222,7 @@ Task Validate-OraLogs -description "Check for Oracle Errors in log files " -PreC
       $script:isOraErrors =$true
       Write-Warning -Message $('{0} not found' -f $logPath)
     }
-    $rv = Select-String -Pattern '^ORA-[0-9]+' -Path $logPath
+    $rv = Select-String -Pattern '^ORA-[0-9]+','^SP2-[0-9]+' -Path $logPath
     if ($rv)
     {
       $script:isOraErrors = $true

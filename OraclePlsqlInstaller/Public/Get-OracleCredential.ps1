@@ -36,7 +36,7 @@ function Get-OracleCredential
     [string]$netServiceName
   )
   
-  $OraUserName = $('{0}@{1}' -f $UserName, $net_service_name)
+  $OraUserName = $('{0}@{1}' -f $UserName, $netServiceName)
   $Target = "MicrosoftPowerShell:user=$OraUsername"
   try
   {
