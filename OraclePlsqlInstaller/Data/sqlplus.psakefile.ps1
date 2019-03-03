@@ -36,7 +36,7 @@ FormatTaskName "`r`n[------{0}------]`r`n"
 
 Task default -depends install
 
-Task install -depends Clean, Init, Start-Logging, Show-Settings, Test-Connect, Accept, Invoke-sqlplus, Validate-OraLogs, Stop-Logging, Archive, ExitStatus  -description "Execute pl/sql files into database using sqlplus.exe"
+Task install -alias "execute" -depends Clean, Init, Start-Logging, Show-Settings, Test-Connect, Accept, Invoke-sqlplus, Validate-OraLogs, Stop-Logging, Archive, ExitStatus  -description "Execute pl/sql files into database using sqlplus.exe"
 
 Properties {
   # sdlc must be set via -parameters
@@ -46,20 +46,21 @@ Properties {
   # Add variable names to $config_vars to display their values
   $script:config_vars += @(
     'cfg_sqlSpec'
-     ,'IsoDateTimeStr'
-     ,'JobDir'
-     ,'JobName'
-     ,'TempDir'
-     ,'PoshLogPathAbs'
-     ,'ArchiveZipPath'
-     ,"ArchiveZipContentFileSpec"
-     ,"verbose"
-     ,"sdlc"
-     ,"zipExe"
-     ,"sqlplusExe"
-     ,"zipArgs"
-     ,"WhatIfPreference"
-     ,"VerbosePreference"
+    'IsoDateTimeStr'
+    'JobDir'
+    'JobName'
+    'TempDir'
+    'PoshLogPathAbs'
+    'ArchiveZipPath'
+    "ArchiveZipContentFileSpec"
+    "verbose"
+    "sdlc"
+    "zipExe"
+    "sqlplusExe"
+    "zipArgs"
+    "WhatIfPreference"
+    "VerbosePreference"
+    "force"
   )
   $verbose = ($VerbosePreference -eq 'Continue');
   $now = [System.DateTime]::Now
@@ -81,6 +82,7 @@ Properties {
   $script:sqlCommands = @()
   $script:confirmation = $false;
   [boolean]$script:isOraErrors = $false
+  $force=$false
 }
 
 
@@ -213,7 +215,7 @@ Task ExitStatus -description "Success or Failure"  {
 
 
 Task Validate-OraLogs -description "Check for Oracle Errors in log files " -PreCondition { ($script:confirmation -eq $true) -and (!$WhatIfPreference) }  {
-  @($script:sqlCommands).GetEnumerator() | %{
+  @($script:sqlCommands).GetEnumerator() | ForEach-Object{
     $logPath = Join-Path -path $PSScriptRoot -childpath $_.logFileName
     Write-Verbose -message $('Attempting : Test for Oracle Errors in {0}' -f $logPath)
     #There should be a log file
@@ -221,6 +223,7 @@ Task Validate-OraLogs -description "Check for Oracle Errors in log files " -PreC
     {
       $script:isOraErrors =$true
       Write-Warning -Message $('{0} not found' -f $logPath)
+      return
     }
     $rv = Select-String -Pattern '^ORA-[0-9]+','^SP2-[0-9]+' -Path $logPath
     if ($rv)
@@ -253,10 +256,14 @@ Task Accept -Description "Visual confirmation that we are hitting the correct co
     write-verbose $($i.fileName)
     write-host $sqlplusExe,$i.sqlplusArgs
   }
-  $confirmation = read-Host -Prompt "Enter Y to Continue"
-  if ($confirmation -eq 'Y')
-  {
+  if ($force){
     $script:confirmation=$true
+  }else{
+    $confirmation = read-Host -Prompt "Enter Y to Continue"
+    if ($confirmation -eq 'Y' )
+    {
+      $script:confirmation=$true
+    }
   }
 }
 

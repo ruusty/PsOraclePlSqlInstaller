@@ -8,17 +8,19 @@
   .PARAMETER tasklist
     Psake task
   
-  .PARAMETER Path
-    A description of the Path parameter.
-  
+  .PARAMETER sequence
+    The pl/sql are run in sequence
+    The sequence number determines the pl/sql files to execute using configuration in install.psd1
+    '11', '12', '13', '14', '31', '32', '40', '70'
+
   .PARAMETER sdlc
     The System Development configuration
   
   .Example
     .\install.ps1 -?
-  
+    
   .Example
-    .\install.ps1 -task install -sdlc dev -verbose -whatif
+    .\install.ps1 -task install -seq 11 -sdlc dev -verbose -whatif
   
   .NOTES
     Whatif and Verbose switches are supported.
@@ -28,11 +30,13 @@ param
 (
   [Parameter(Position = 0)]
   [String[]]$tasklist = '?',
-  [Parameter(Position = 1)]
-  [SupportsWildcards()]
-  [string[]]$Path = @('[0-9_][0-9_][0-9_]_*-*.sql'),
-  [Parameter(Mandatory = $true)]
-  [ValidateSet('DEV', 'TEST', 'UAT', 'PROD')]
+  [Parameter(Mandatory = $false,
+             Position = 1)]
+  [ValidateSet('unset','11', '12', '13', '14', '31', '32', '40', '70', 'all')]
+  [string]$sequence = 'unset',
+  [Parameter(Mandatory = $false,
+             Position = 2)]
+  [ValidateSet('UNSET','DEV', 'PROD')]
   [string]$sdlc = 'UNSET',
   [switch]$Force
 )
@@ -45,18 +49,27 @@ $CommandName = $PSCmdlet.MyInvocation.InvocationName;
 Out-String | write-verbose
 #endregion
 
+$name = 'sql_{0}' -f $sequence
+$ConfigPath = [System.IO.Path]::ChangeExtension($PSCommandPath, ".psd1")
+$ConfigData = (Import-PowerShellDataFile -Path $ConfigPath).$name
+if (!$ConfigData)
+{
+  $ConfigData =  'not_found.sql'
+}
+
 
 $params = @{
   WhatIfPreference       = $WhatIfPreference;
   VerbosePreference      = $VerbosePreference;
   DebugPreference        = $DebugPreference;
-  JobName                = [System.IO.path]::GetFileNameWithoutExtension($PSCommandPath)
+  JobName                = '{0}-{1}' -f $([System.IO.path]::GetFileNameWithoutExtension($PSCommandPath)), $sequence
   sdlc                   = $sdlc
 }
 
 $props = @{
-  cfg_sqlSpec = $Path
+  cfg_sqlSpec = $ConfigData
   force = $force
 }
+
 
 Invoke-psake -nologo -buildFile 'sqlplus.psakefile.ps1' -parameters $params -properties $props -taskList $tasklist
