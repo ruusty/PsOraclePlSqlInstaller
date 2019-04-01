@@ -1,71 +1,70 @@
-# OraclePlsqlInstaller #
+# OraclePlsqlInstaller <!-- omit in toc --> #
 
-
-~~~
-Project:        
+~~~text
+Project:
 Product:        OraclePlsqlInstaller
 Version:        4.4
-Date:           2018-07-03
+Date:           2019-04-01
 Description:    Automates installing Oracle Pl/Sql code into an Oracle database
 
 CHED Services
 ~~~
 
-
 <a name="TOC"></a>
-# Table of Contents
 
 - [Description](#description)
 - [Usage](#usage)
 - [Windows Credential Manager](#windows-credential-manager)
-    - [Save-OracleCredentials](#save-oraclecredentials)
-    - [Remove-OracleCredentials](#remove-oraclecredentials)
-    - [Show-OracleCredentials](#show-oraclecredentials)
-- [Filename](#filename)
-- [Notes](#notes)
+  - [Save-OracleCredentials](#save-oraclecredentials)
+  - [Remove-OracleCredentials](#remove-oraclecredentials)
+  - [Show-OracleCredentials](#show-oraclecredentials)
+- [Filenaming Convention](#filenaming-convention)
+- [TechNotes](#technotes)
+- [Dev Notes](#dev-notes)
 
+[&uarr;](#TOC)
 
-
-<a name="description"></a>
-## Description [&uarr;](#TOC) ##
+## Description ##
 
 The PowerShell Module *OraclePlsqlInstaller* automates installing **Oracle Pl/Sql** code into a Oracle database in a repeatable
 and automated install.
 
 The Oracle credentials are stored in the [Windows Credential Manager](#windows-credential-manager).
 
-The sub-folder Data under the OraclePlsqlInstaller installed location contains examples a
-and boilerplate code.
+The sub-folder Data under the OraclePlsqlInstaller installed location contains examples and boilerplate code.
 
-~~~
+~~~powershell
 get-module -listavailable oraclePlsqlInstaller
 ~~~
 
 - Load the module
-~~~
+
+~~~powershell
 import-module OraclePlsqlInstaller -verbose
 get-module OraclePlsqlInstaller | select -expand ExportedCommands
 $(get-module OraclePlsqlInstaller).ExportedCommands.Keys
 ~~~
 
 - Get cmdlet help
-~~~
+
+~~~powershell
 $(get-module OraclePlsqlInstaller).ExportedCommands.Keys |% {get-help $_}
 ~~~
 
-~~~
+~~~powershell
 get-help about_OraclePlsqlInstaller
 ~~~
 
-<a name="usage"></a>
-## Usage [&uarr;](#TOC) ##
+[&uarr;](#TOC)
+
+## Usage ##
 
 Typically the *OraclePlsqlInstaller* module is used under the orchestration of `sqlplus.psake.ps1`.
 
-The top level command is *Get-SqlPlusCommands* to return a hash table of `sqlplus.exe` commands 
+The top level command is *Get-SqlPlusCommands* to return a hash table of `sqlplus.exe` commands
 based on the [Filename](#filename) convention.
 
-~~~
+~~~powershell
  $initArgs = @{
     directory =  $PWD
     sqlSpec = @('[0-9_][0-9_][0-9_]_*-*.sql', '[0-9_][0-9_][a-z]_*-*.sql')
@@ -81,19 +80,17 @@ These are then executed by **psake** task *Invoke-Sqlplus*.
 
 See [sqlplus.psake.ps1](file:./../sqlplus.psake.ps1)
 
-
 - Import module and show commands
-~~~
+
+~~~powershell
 import-module OraclePlsqlInstaller
 get-module OraclePlsqlInstaller | select -expand ExportedCommands
 $(get-module OraclePlsqlInstaller).ExportedCommands.Keys |% {get-help $_}
-
 ~~~
 
+[&uarr;](#TOC)
 
-<a name="windows-credential-manager"></a>
-## Windows Credential Manager [&uarr;](#TOC) ##
-
+## Windows Credential Manager ##
 
 The **Windows Credential Manager** securely stores the Oracle Schema Passwords.
 
@@ -104,7 +101,7 @@ cmdlets are used to manage the import of passwords from
 `G:\MKT\DEPT\IT Spatial\OMS GIS\Support 'How To' Instruction\OMS-Oracle-Config\password-check\gis-oms-Oracle.xml`
 to the **Windows Credential Manager**.
 
-~~~
+~~~powershell
 Save-OracleCredentials -sdlc dev -path "G:\MKT\DEPT\IT Spatial\OMS GIS\Support 'How To' Instruction\OMS-Oracle-Config\password-check\gis-oms-Oracle.xml"
 ~~~
 
@@ -113,40 +110,41 @@ and returns the `SqlPlus.exe` command line to run the pl/sql file including pass
 
 Launch the Credential Manager
 **Win+R**
-~~~
+
+~~~batch
 c:\windows\system32\control.exe /name Microsoft.CredentialManager
 ~~~
 
+[&uarr;](#TOC)
 
-<a name="save-oracleaccounts"></a>
-### Save-OracleCredentials [&uarr;](#TOC) ###
+### Save-OracleCredentials ###
 
 Saves the Oracle accounts username and password from the XML to 
 `Control Panel\All Control Panel Items\Credential Manager` the **Windows Vault**.
 
-
 The passwords can be access by the using the PowerShell Module **BetterCredentials**.
 
-**Example**
-~~~
+***Example***
+
+~~~powershell
 Save-OracleCredentials -verbose -sdlc dev 
 ~~~
 
 - Import Passwords from XML file.
-~~~
+
+~~~powershell
 Save-OracleCredentials -sdlc dev -path "G:\MKT\DEPT\IT Spatial\OMS GIS\Support 'How To' Instruction\OMS-Oracle-Config\password-check\gis-oms-Oracle.xml"
 ~~~
 
-
 - Show the imported passwords from the **Windows Vault** using OraclePlsqlInstaller.
-~~~
-Show-OracleCredentials -verbose -sdlc dev 
-~~~
 
+~~~powershell
+Show-OracleCredentials -verbose -sdlc dev
+~~~
 
 - Show the imported password from the **Windows Vault** using BetterCredentials.
 
-~~~
+~~~powershell
 $UserName='ched_framework@oncd.world'
 $Target = "MicrosoftPowerShell:user=$Username"
 $cred=BetterCredentials\Get-Credential -username $Target
@@ -155,44 +153,46 @@ $cred.GetNetworkCredential().password
 $cred.GetNetworkCredential().Username
 ~~~
 
+[&uarr;](#TOC)
 
-
-
-<a name="remove-oracleaccounts"></a>
-### Remove-OracleCredentials [&uarr;](#TOC) ###
+### Remove-OracleCredentials ###
 
 Removes the Oracle Credentials from the **Windows Vault**.
 
-~~~
+~~~powershell
 Remove-OracleCredentials -sdlc dev -verbose
 ~~~
 
+[&uarr;](#TOC)
 
-<a name="show-oracleaccounts"></a>
-### Show-OracleCredentials [&uarr;](#TOC) ###
+### Show-OracleCredentials ###
 
 Show the Oracle Credentials from the **Windows Vault**.
 
-~~~
+~~~powershell
 Show-OracleCredentials -sdlc dev -verbose
 ~~~
 
-<a name="filename"></a>
-## Filename [&uarr;](#TOC) ##
+[&uarr;](#TOC)
+
+## Filenaming Convention ##
 
 The filename convention describes how to execute the file.
 
-~~~
+~~~text
 <ExecSequence>_<Description>-<DatabaseIdentifier>.<OraUser>.sql
 ~~~
+
+***Example***
 
 `010_views-pon.oms_op.sql` Converts  to
 `oms_op/oraPassword@pond.world @run.sql 010_views-pon.oms_op.sql 010_views-pon.oms_op.sql.log`
 
+[&uarr;](#TOC)
 
+## TechNotes ##
 
-**NOTES**
-~~~
+~~~powershell
 [PSCustomObject]@{
   PSTypeName          Hash Table type = 'PSOracle.SqlPlusCmd'
   FileName            Pl/sql file name of the format 010_views-pon.oms_op.sql I.E. 010_views-<DatabaseIdentifier>.<OraUser>.sql
@@ -208,8 +208,9 @@ The filename convention describes how to execute the file.
   OraConnection       Oracle connect string to the database E.G. /@pond.world , oms/password@pond.world
 ~~~
 
-**EXAMPLE**
-~~~
+***EXAMPLE***
+
+~~~text
 FileName           : 140_pkg.PLANNED_OUTAGE-pon.oms.sql
 OraUser            : oms
 Path               : E:\Projects-Active\PSOraclePlSqlInstaller\OraclePlsqlInstaller\Specification\Data\140_pkg.PLANNED_OUTAGE-pon.oms.sql
@@ -223,8 +224,9 @@ sqlplusArgs        : {-L, "oms/oms.password@POND.world", @"run.sql", "140_pkg.PL
 OraConnection      : "oms/oms.password@POND.world"
 ~~~
 
-**EXAMPLE**
-~~~
+***EXAMPLE***
+
+~~~text
 FileName           : ____entry_criteria-onc.username.sql
 OraUser            : Russell
 Path               : E:\Projects-Active\PSOraclePlSqlInstaller\OraclePlsqlInstaller\Specification\Data\____entry_criteria-onc.username.sql
@@ -238,16 +240,15 @@ sqlplusArgs        : {-L, "/@ONCD.world", @"run.sql", "____entry_criteria-onc.us
 OraConnection      : "/@ONCD.world"
 ~~~
 
+[&uarr;](#TOC)
 
-<a name="notes"></a>
-## Notes [&uarr;](#TOC) ##
-
+## Dev Notes ##
 
 - Pester test are incomplete.
 
 - Hash table for each *.sql file
 
-~~~
+~~~powershell
    $details = @{
             fileName = $fname
             oraUser = $oraUser
@@ -258,12 +259,12 @@ OraConnection      : "/@ONCD.world"
             credentialFileName = $(join-path $directory $($oraUser + "@" + $netServiceNames[$conn[0]] + ".credential"))
             oraPassword = ""
             sqlplusArgs = @()
+   }
 ~~~
 
 Then can validate
 
-
-~~~
+~~~powershell
 [validatescript({
             $argKeys=@('fileName', 'oraUser', 'path','databaseIdentifier','tnsName',
             'logFileName' ,'credentialFileName','oraPassword','sqlplusArgs' )

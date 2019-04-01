@@ -4,18 +4,15 @@
 $poshModFolder = ".PowershellModules"
 $installRootDirPath = $((Split-Path -Path $env:LOCALAPPDATA) | Split-Path) | Join-Path -child $poshModFolder
 
-# May fail because infecto disables network drive letters when in Elevated Privledge
-# Causes join-path to fail. Join-path does not fail when Drive is non-existant
-try
-{
-  $installRootDirPath = $(join-path -path $(join-path -path $env:HOMEDRIVE -child $env:HOMEPATH) -child $poshModFolder)
-}
-catch
-{
-  Write-Host $_
-}
+$moduleName = "OraclePlSqlInstaller" #Top filepath in zip file
+$moduleDirPath = Join-Path -Path $installRootDirPath -ChildPath $moduleName
+$ZipName = "PS$moduleName.zip"
 
-$moduleName="OraclePlSqlInstaller" #Top filepath in zip file
+$config_vars += @(
+    'installRootDirPath'
+    , 'moduleName'
+    , 'moduleDirPath'
+    , 'ZipName'
+)
 
-$ZipName ="PSOraclePlSqlInstaller.zip"
-
+$config_vars | Get-Variable | Sort-Object -unique -property "Name" | Select-Object Name, value | Format-Table | Out-Host

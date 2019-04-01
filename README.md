@@ -1,30 +1,21 @@
-# PSOraclePlSqlInstaller #
+# PSOraclePlSqlInstaller <!-- omit in toc --> #
 
 ~~~
 Project:        Ruusty
 Product:        PSOraclePlSqlInstaller
 Version:        4.3.0
-Date:           2018-07-02  
+Date:           2019-04-01
 Description:    PSOraclePlSqlInstaller
 
 CHED Services
 ~~~
 
 <a name="TOC"></a>
-# Table of Contents
 
-- [Description](#Description)
-- [TechNotes](#TechNotes)
+- [Description](#description)
 
-<a name="Description"></a>
-## Description [&uarr;](#TOC) ##
+## Description ##
 
-PowerShell module to automate installing Oracle Pl/Sql code into an Oracle database
+- PowerShell module to automate installing Oracle Pl/Sql code into an Oracle database.
+- Chocolatey install to install module _OraclePlSqlInstaller_
 
-~~~
-get-help about_OraclePlsqlInstaller
-~~~
-
-
-<a name="TechNotes"></a>
-## TechNotes [&uarr;](#TOC) ##

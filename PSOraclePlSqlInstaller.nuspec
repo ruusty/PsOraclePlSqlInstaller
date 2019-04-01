@@ -15,6 +15,7 @@
     <tags> powershell pl/sql oracle </tags>
   </metadata>
   <files>
+    <file target="tools" src="tools\ChocolateyBeforeModify.ps1" />
     <file target="tools" src="tools\ChocolateyInstall.ps1" />
     <file target="tools" src="tools\ChocolateyUninstall.ps1" />
     <file target="tools" src="tools\properties.ps1" />

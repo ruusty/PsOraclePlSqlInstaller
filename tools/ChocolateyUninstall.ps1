@@ -3,14 +3,12 @@ write-host chocolateyPackageFolder  =$env:chocolateyPackageFolder
 write-host chocolateyPackageName    =$env:chocolateyPackageName
 write-host chocolateyPackageVersion =$env:chocolateyPackageVersion
 
-write-host `$ErrorActionPreference=$ErrorActionPreference
-write-host `$VerbosePreference=$VerbosePreference
-
 $tools = "$(Split-Path -parent $MyInvocation.MyCommand.Definition)"
-.  $(join-path $tools "helpers.ps1")
 .  $(join-path $tools "properties.ps1")
+$ErrorActionPreference = 'Stop'
+Remove-Module -Name $moduleName -Force -ErrorAction SilentlyContinue
 
 UnInstall-ChocolateyZipPackage -PackageName $env:chocolateyPackageName -ZipFileName $ZipName
-write-host `$lastexitcode=$lastexitcode -ForegroundColor DarkYellow
-write-host `$?=$? -ForegroundColor DarkYellow
-write-host $error
+
+Write-Verbose "Removing all version of '$moduleName' from '$moduleDirPath'."
+Remove-Item -Path $moduleDirPath -Recurse -Force -ErrorAction SilentlyContinue
