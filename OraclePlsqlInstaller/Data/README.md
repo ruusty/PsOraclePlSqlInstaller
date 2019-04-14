@@ -1,41 +1,36 @@
-# __ProjectName__
+# __ProjectName__ <!-- omit in toc --> #
 
-~~~
+~~~text
 Project:        GIS-OMS
 Product:        __ProjectName__-Ora
 Version:        4.3.0.0
-Date:           2018-11-08 
+Date:           2018-11-08
 Description:    __ProjectName__ Oracle into SDLC OMS database.
 
 CHED Services
-
 ~~~
 
 <a name="TOC"></a>
-# Table of Contents
 
 - [Description](#description)
 - [Installation](#installation)
 
-
-
-<a name="description"></a>
-## Description [&uarr;](#TOC) ##
-
-Delivers xyz functionality 
+## Description ##
 
 Installs *Pl/Sql* code into Oracle SDLC databases in a repeatable and configurable manner.
 
+The Oracle database and schema are encoded in the pl/sql filename.
 
-<a name="installation"></a>
-## Installation [&uarr;](#TOC) ##
+[&uarr;](#TOC)
+
+## Installation ##
 
 - Open a *Powershell Console*
 
-- Execute 
-~~~
+- Execute
+  
+~~~powershell
 .\install.ps1 -sdlc $sdlc
 ~~~
 
 Where `$sdlc` == `['DEV'|'TEST'|'UAT'|'PROD']`
-

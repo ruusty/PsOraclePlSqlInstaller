@@ -17,7 +17,7 @@
 
   .EXAMPLE
     Invoke-psake -nologo -buildFile 'sqlplus.psakefile.ps1' -parameters $params -properties $props -taskList $tasklist
-  
+
   .NOTES
 
     Requires Modules
@@ -28,7 +28,7 @@
 Framework '4.0'
 Set-StrictMode -Version 4
 $me = $MyInvocation.MyCommand.Definition
-filter Skip-Empty { $_ | ?{ $_ -ne $null -and $_ } }
+filter Skip-Empty { $_ | Where-Object{ $_ -ne $null -and $_ } }
 
 Import-Module OraclePlsqlInstaller
 
@@ -36,12 +36,13 @@ FormatTaskName "`r`n[------{0}------]`r`n"
 
 Task default -depends install
 
-Task install -alias "execute" -depends Clean, Init, Start-Logging, Show-Settings, Test-Connect, Accept, Invoke-sqlplus, Validate-OraLogs, Stop-Logging, Archive, ExitStatus  -description "Execute pl/sql files into database using sqlplus.exe"
+Task install -depends Clean, Init, Start-Logging, Show-Settings, Test-Connect, Accept, Invoke-sqlplus, Validate-OraLogs, Stop-Logging, Archive, ExitStatus  -description "Execute pl/sql files into database using sqlplus.exe"
 
 Properties {
   # sdlc must be set via -parameters
   Assert -conditionToCheck { $JobName -ne $null } -failureMessage "$JobName must be set"
-  Assert -conditionToCheck {$SDLC -ne $null } -failureMessage "$SDLC must be set"
+  Assert -conditionToCheck { $SDLC -ne $null } -failureMessage "$SDLC must be set"
+  Assert -conditionToCheck { $SrrCredential -ne $null } -failureMessage "SRR oms_user credential must be defined."
   $script:config_vars = @()
   # Add variable names to $config_vars to display their values
   $script:config_vars += @(
@@ -62,7 +63,7 @@ Properties {
     "VerbosePreference"
     "force"
   )
-  $verbose = ($VerbosePreference -eq 'Continue');
+  $IsVerbose = ($VerbosePreference -eq 'Continue');
   $now = [System.DateTime]::Now
   write-verbose($("CurrentLocation={0}" -f $executionContext.SessionState.Path.CurrentLocation))
 
@@ -83,6 +84,8 @@ Properties {
   $script:confirmation = $false;
   [boolean]$script:isOraErrors = $false
   $force=$false
+  #sqlplus.exe user/pwd@connect_identifier @run.sql file_to_run.sql file_to_run.sql.log
+  $OracleRunFixturePath = join-path -path $PSScriptRoot -ChildPath "run.sql"
 }
 
 
@@ -93,8 +96,8 @@ Task Show-Settings -description "Display the psake configuration properties vari
 }
 
 
-Task Show-Passwords -description "Display the passwords in the credential files" -depends init {
-  Show-OracleCredentials -sdlc $sdlc
+Task Show-Passwords -description "Display the passwords" -depends init {
+    OraclePlsqlInstaller\Show-OracleCredentials -sdlc $sdlc
 }
 
 
@@ -117,10 +120,10 @@ Task Init -Description "Initialize the environment based on the properties" {
     sqlSpec = $cfg_sqlSpec;
     logFileSuffix = $IsoDateTimeStr;
     netServiceNames = OraclePlsqlInstaller\Set-SdlcConnections -sdlc $sdlc;
-    verbose = $verbose;
+    verbose     = $IsVerbose;
   }
   $initArgs | Out-String | write-verbose
-  
+
   $script:sqlCommands = OraclePlsqlInstaller\Get-SqlPlusCommands @initArgs
   $script:sqlCommands | Out-String | write-verbose
   Write-Host "Done Initialization!"
@@ -128,8 +131,7 @@ Task Init -Description "Initialize the environment based on the properties" {
 
 
 Task Test-Connect -depends Init -description "Test username and password connections"{
-  $verbose = $true;
-  $script:sqlCommands | OraclePlsqlInstaller\Test-OracleConnections -sqlplusExe "sqlplus.exe" -verbose:$verbose -whatif:$false
+  $script:sqlCommands | OraclePlsqlInstaller\Test-OracleConnections -sqlplusExe "sqlplus.exe" -verbose:$IsVerbose -whatif:$false
 }
 
 
@@ -138,57 +140,64 @@ Task Clean -Description "Remove the previous generated files in the JobDir"  {
 }
 
 
-Task Invoke-Sqlplus -depends Init -Description "Executes sqlplus.exe, Spool file specified as second parameter on command line" -PreCondition { ($script:confirmation -eq $true) } {
-  New-OracleRunFixture
-  @($script:sqlCommands).GetEnumerator() | %{
+Task New-RunFixture -Description "Create the run.sql" {
+  OraclePlsqlInstaller\New-OracleRunFixture
+  #Add configuration defines
+  $runSql = get-content -path $OracleRunFixturePath
+  $newSql = foreach ($line in $runSql) {
+    if ($line -eq 'define'){
+      $("define SRRPassword={0}" -f $SrrCredential.GetNetworkCredential().Password)
+    }
+    $line
+  }
+  $newSql | set-content -path $OracleRunFixturePath
+}
+
+
+Task Invoke-Sqlplus -depends Init,New-RunFixture -Description "Executes sqlplus.exe, Spool file specified as second parameter on command line" -PreCondition { ($script:confirmation -eq $true) } {
+  @($script:sqlCommands).GetEnumerator() | ForEach-Object{
     Write-Host "Attempting : ", $sqlplusExe  $_.sqlplusArgs
     try
     {
-      OraclePlsqlInstaller\Start-ExeWithOutput -FilePath $sqlplusExe -ArgumentList $_.sqlplusArgs -verbose:$verbose -whatif:$WhatIfPreference
+      OraclePlsqlInstaller\Start-ExeWithOutput -FilePath $sqlplusExe -ArgumentList $_.sqlplusArgs -verbose:$IsVerbose -whatif:$WhatIfPreference
     }
     catch [Exception] {
-      $errMsg = $_ | fl * -Force | Out-String
+      $errMsg = $_ | Format-List * -Force | Out-String
       Stop-Transcript -ErrorAction SilentlyContinue
-      OraclePlsqlInstaller\Start-ExeWithOutput -FilePath $zipExe -ArgumentList $zipArgs -verbose:$verbose -whatif:$WhatIfPreference
+      OraclePlsqlInstaller\Start-ExeWithOutput -FilePath $zipExe -ArgumentList $zipArgs -verbose:$IsVerbose -whatif:$WhatIfPreference
       Write-Host $errMsg
       throw
     }
   }
+  remove-item -path $OracleRunFixturePath -ErrorAction SilentlyContinue
 }
 
 
 Task Start-Logging -description "Log output" {
-  Start-Transcript -Path $PoshLogPathAbs -verbose:$verbose -whatif:$WhatIfPreference
+  Start-Transcript -Path $PoshLogPathAbs -verbose:$IsVerbose -whatif:$WhatIfPreference
 }
 
 
 Task Stop-Logging -description "Stop the logging" {
-  if ($WhatIfPreference -ne $true)
-  {
-    Stop-Transcript
-    #Replace Network Name with password
-    $bak = [System.IO.Path]::ChangeExtension($PoshLogPathAbs, "bak")
-    $UserName = $(([System.Security.Principal.WindowsIdentity]::GetCurrent().Name -split '\\')[1])
-    $netServiceName = (OraclePlsqlInstaller\Set-SdlcConnections -sdlc $sdlc).pon;
-    $cred = OraclePlsqlInstaller\Get-OracleCredential -Username $UserName -netServiceName $netServiceName
-    $secret = $cred.GetNetworkCredential().Password
-    if (Test-Path -path $PoshLogPathAbs)
-    {
-      Move-Item -Path $PoshLogPathAbs -Destination $bak
-      Get-Content -Path $bak | %{ $_.replace($secret, '!!password!!') } | Set-Content -Path $PoshLogPathAbs
-      Remove-Item -Path $bak -Force
+    $match = '/([^@]+)'
+    if ($WhatIfPreference -ne $true) {
+        Stop-Transcript -ErrorAction SilentlyContinue
+        if (Test-Path -path $PoshLogPathAbs) {
+            Move-Item -Path $PoshLogPathAbs -Destination $bak
+            Get-Content -Path $bak | ForEach-Object { $_ -creplace $match , '/__password__' } | Set-Content -Path $PoshLogPathAbs
+            Remove-Item -Path $bak -Force
+        }
     }
-  }
 }
 
 
 Task Archive -depends Init -Description "Archive the outputs in data directory to a datetime versioned zip file" {
   try
   {
-    OraclePlsqlInstaller\Start-ExeWithOutput -FilePath $zipExe -ArgumentList $zipArgs -verbose:$verbose -whatif:$WhatIfPreference
+    OraclePlsqlInstaller\Start-ExeWithOutput -FilePath $zipExe -ArgumentList $zipArgs -verbose:$IsVerbose -whatif:$WhatIfPreference
   }
   catch [Exception] {
-    $errMsg = $_ | fl * -Force | Out-String
+    $errMsg = $_ | Format-List * -Force | Out-String
     Write-Host $errMsg
     throw $_
   }
@@ -215,7 +224,7 @@ Task ExitStatus -description "Success or Failure"  {
 
 
 Task Validate-OraLogs -description "Check for Oracle Errors in log files " -PreCondition { ($script:confirmation -eq $true) -and (!$WhatIfPreference) }  {
-  @($script:sqlCommands).GetEnumerator() | ForEach-Object{
+  @($script:sqlCommands).GetEnumerator() | %{
     $logPath = Join-Path -path $PSScriptRoot -childpath $_.logFileName
     Write-Verbose -message $('Attempting : Test for Oracle Errors in {0}' -f $logPath)
     #There should be a log file
