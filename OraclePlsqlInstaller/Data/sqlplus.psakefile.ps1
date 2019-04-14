@@ -42,7 +42,6 @@ Properties {
   # sdlc must be set via -parameters
   Assert -conditionToCheck { $JobName -ne $null } -failureMessage "$JobName must be set"
   Assert -conditionToCheck { $SDLC -ne $null } -failureMessage "$SDLC must be set"
-  Assert -conditionToCheck { $SrrCredential -ne $null } -failureMessage "SRR oms_user credential must be defined."
   $script:config_vars = @()
   # Add variable names to $config_vars to display their values
   $script:config_vars += @(
@@ -142,7 +141,8 @@ Task Clean -Description "Remove the previous generated files in the JobDir"  {
 
 Task New-RunFixture -Description "Create the run.sql" {
   OraclePlsqlInstaller\New-OracleRunFixture
-  #Add configuration defines
+  <#
+  Add configuration defines
   $runSql = get-content -path $OracleRunFixturePath
   $newSql = foreach ($line in $runSql) {
     if ($line -eq 'define'){
@@ -151,6 +151,7 @@ Task New-RunFixture -Description "Create the run.sql" {
     $line
   }
   $newSql | set-content -path $OracleRunFixturePath
+  #>
 }
 
 

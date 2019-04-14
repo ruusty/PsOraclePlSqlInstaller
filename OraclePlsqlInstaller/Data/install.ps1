@@ -8,11 +8,14 @@
   .PARAMETER tasklist
     Psake task
   
+  .PARAMETER sdlc
+    The System Development configuration
+  
   .PARAMETER Path
     A description of the Path parameter.
   
-  .PARAMETER sdlc
-    The System Development configuration
+  .PARAMETER Force
+    A description of the Force parameter.
   
   .Example
     .\install.ps1 -?
@@ -28,12 +31,13 @@ param
 (
   [Parameter(Position = 0)]
   [String[]]$tasklist = '?',
-  [Parameter(Position = 1)]
-  [SupportsWildcards()]
-  [string[]]$Path = @('[0-9_][0-9_][0-9_]_*-*.sql'),
-  [Parameter(Mandatory = $true)]
+  [Parameter(Mandatory = $false,
+             Position = 1)]
   [ValidateSet('DEV', 'TEST', 'UAT', 'PROD')]
   [string]$sdlc = 'UNSET',
+  [Parameter(Position = 2)]
+  [SupportsWildcards()]
+  [string[]]$Path = @('[0-9_][0-9_][0-9_]_*-*.sql'),
   [switch]$Force
 )
 #region startup
