@@ -102,6 +102,7 @@ properties {
     )
   
   $ProjectName = [System.IO.Path]::GetFileName($PSScriptRoot)
+  #$ProjectName = 'SRR-Interface-ORA'
   $ProjTopdir = $PSScriptRoot
   $ProjBuildPath = Join-Path $ProjTopdir "Build"
   $ProjDistPath = Join-Path $ProjTopdir "Dist"
@@ -141,7 +142,7 @@ properties {
   <# Robocopy settings #>
   <# Tweek exDir exFile to define files to include in zip #>
   $exDir = @( "Build", "Dist", "tools", ".git", "specs", "Specification", "wrk", "work")
-  $exFile = @("build.bat", "build.psake.ps1", "*.nuspec", ".gitignore", "*.config.ps1", "*.lis", "*.nupkg", "*.Tests.ps1", "*.html", "*Pester*", "*.Tests.Setup.ps1", "*.zip", "*.rar")
+  $exFile = @("build.ps1", "build.psakefile.ps1", "*.nuspec", ".gitignore", "*.config.ps1", "*.lis", "*.nupkg", "*.Tests.ps1", "*.html", "*Pester*", "*.Tests.Setup.ps1", "*.zip", "*.rar")
   
   <# Custom additions #>
   #$exDir += @( ".Archive", ".SlickEdit")
@@ -173,7 +174,7 @@ task      build -depends Show-Settings, git-status, clean, create-dirs, git-hist
 
 
 
-task Compile -description "Build Deliverable zip file" -depends clean, create-dirs, set-version{
+task Compile -description "Build Deliverable zip file" -depends create-dirs, set-version{
   $versionNum = Get-Content $ProjVersionPath
   $version = [system.Version]::Parse($versionNum)
 
@@ -263,21 +264,15 @@ task create-dirs {
 }
 
 
-task clean -description "Remove all generated files" -depends clean-dirs {
-  if ($isMaster)
-  {
-    exec { & $GitExe "clean" -f }
-  }
-  else
-  {
-    exec { & $GitExe "clean" -f --dry-run }
-  }
+task clean -description "Remove all generated files, honouring the stardard Git exclusions: .git/info/exclude, .gitignore in each directory, and the user's global exclusion file." -depends clean-dirs {
+  exec { & $GitExe "ls-files" --others --exclude-standard |ForEach-Object{ remove-item $_ -Verbose:$IsVerbose}}
 }
 
 
-Task Clean-DryRun -description "Remove all generated files" -depends clean-dirs {
-  exec { & $GitExe "clean" -f --dry-run}
+Task Clean-DryRun -description "Remove generated files, honouring the stardard Git exclusions" -depends clean-dirs {
+exec { & $GitExe "ls-files" --others --exclude-standard |ForEach-Object{ remove-item $_ -whatif}}
 }
+
 
 task set-version -description "Create the file containing the version" {
   $version = Ruusty.ReleaseUtilities\Get-Version -Major $ProjMajorMinor.Split(".")[0] -minor $ProjMajorMinor.Split(".")[1]

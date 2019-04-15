@@ -184,6 +184,7 @@ Task Stop-Logging -description "Stop the logging" {
     if ($WhatIfPreference -ne $true) {
         Stop-Transcript -ErrorAction SilentlyContinue
         if (Test-Path -path $PoshLogPathAbs) {
+            $bak = [System.IO.Path]::ChangeExtension($PoshLogPathAbs, "bak")
             Move-Item -Path $PoshLogPathAbs -Destination $bak
             Get-Content -Path $bak | ForEach-Object { $_ -creplace $match , '/__password__' } | Set-Content -Path $PoshLogPathAbs
             Remove-Item -Path $bak -Force
