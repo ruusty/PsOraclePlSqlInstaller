@@ -36,7 +36,7 @@ FormatTaskName "`r`n[------{0}------]`r`n"
 
 Task default -depends install
 
-Task install -depends Clean, Init, Start-Logging, Show-Settings, Test-Connect, Accept, Invoke-sqlplus, Validate-OraLogs, Stop-Logging, Archive, ExitStatus  -description "Execute pl/sql files into database using sqlplus.exe"
+Task install -alias execute -depends Clean, Init, Start-Logging, Show-Settings, Test-Connect, Accept, Invoke-sqlplus, Validate-OraLogs, Stop-Logging, Archive, ExitStatus  -description "Execute pl/sql files into database using sqlplus.exe"
 
 Properties {
   # sdlc must be set via -parameters
@@ -53,7 +53,7 @@ Properties {
     'PoshLogPathAbs'
     'ArchiveZipPath'
     "ArchiveZipContentFileSpec"
-    "verbose"
+    "IsVerbose"
     "sdlc"
     "zipExe"
     "sqlplusExe"

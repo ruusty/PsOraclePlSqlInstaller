@@ -17,6 +17,7 @@ $params = @{
   WhatIfPreference        = $WhatIfPreference;
   VerbosePreference       = $VerbosePreference;
   DebugPreference         = $DebugPreference;
+  IsVerbose               = ($VerbosePreference -eq 'Continue')
 }
 
 $props = @{

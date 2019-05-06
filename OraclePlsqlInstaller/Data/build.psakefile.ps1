@@ -102,7 +102,6 @@ properties {
     )
   
   $ProjectName = [System.IO.Path]::GetFileName($PSScriptRoot)
-  #$ProjectName = 'SRR-Interface-ORA'
   $ProjTopdir = $PSScriptRoot
   $ProjBuildPath = Join-Path $ProjTopdir "Build"
   $ProjDistPath = Join-Path $ProjTopdir "Dist"
@@ -264,15 +263,14 @@ task create-dirs {
 }
 
 
-task clean -description "Remove all generated files, honouring the stardard Git exclusions: .git/info/exclude, .gitignore in each directory, and the user's global exclusion file." -depends clean-dirs {
+task clean -description "Remove all generated files" -depends clean-dirs {
   exec { & $GitExe "ls-files" --others --exclude-standard |ForEach-Object{ remove-item $_ -Verbose:$IsVerbose}}
 }
 
 
-Task Clean-DryRun -description "Remove generated files, honouring the stardard Git exclusions" -depends clean-dirs {
-exec { & $GitExe "ls-files" --others --exclude-standard |ForEach-Object{ remove-item $_ -whatif}}
+Task Clean-DryRun -description "Remove all generated files" -depends clean-dirs {
+  exec { & $GitExe "ls-files" --others --exclude-standard | ForEach-Object{ remove-item $_ -whatif}}
 }
-
 
 task set-version -description "Create the file containing the version" {
   $version = Ruusty.ReleaseUtilities\Get-Version -Major $ProjMajorMinor.Split(".")[0] -minor $ProjMajorMinor.Split(".")[1]
